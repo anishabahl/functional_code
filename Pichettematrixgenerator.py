@@ -3,7 +3,8 @@ from numpy import genfromtxt
 import pandas as pd
 import matplotlib.pyplot as plt
 import scipy
-from scipy import optimize
+from scipy import interpolate
+from scipy.interpolate import interp1d
 import math
 ######INPUTS
 bands = 'bandresponses.csv'
@@ -17,6 +18,8 @@ newpath = '/home/ab20/Data/Calibration_file/'
 def approx_gaus(x, QE, fwhm, centre):
     sigma = 0.5*fwhm/np.sqrt(np.log(2))
     return QE*np.exp(-np.square((x-centre)/sigma))
+def findC(A, Aideal):
+    return Aideal - A*C
 ######IMPORT DATA
 bandresponses = genfromtxt(path+bands, delimiter=',')
 bandresponses = np.delete(bandresponses, 0, 0)
@@ -33,31 +36,38 @@ sortedfilter = filterspectrum[np.argsort(filterspectrum[:,0])]
 #normalise intensities
 sortedlight[:,1] = (sortedlight[:,1]-sortedlight[:,1].min())/(sortedlight[:,1].max()-sortedlight[:,1].min())
 plt.figure("light spectrum")
-plt.plot(sortedlight[:, 0], sortedlight[:, 1])
+plt.plot(sortedlight[:, 0], sortedlight[:, 1], label='original light spectrum')
 plt.show(block=False)
 sortedfilter[:,1] = (sortedfilter[:,1]-sortedfilter[:,1].min())/(sortedfilter[:,1].max()-sortedfilter[:,1].min())
 plt.figure("filter spectrum")
-plt.plot(sortedfilter[:, 0], sortedfilter[:, 1])
+plt.plot(sortedfilter[:, 0], sortedfilter[:, 1], label='original filter spectrum')
 #expand filter array to be same shape as light source spectrum 
 interpolatedfilter = np.zeros(sortedlight.shape)
 interpolatedfilter[:,0] = sortedlight[:, 0]
 begin = np.array([0, 0])
 end = np.array([1200, 1])
-interpolatedfilter = np.vstack((begin, interpolatedfilter, end))
-interpolatedfilterdf = pd.DataFrame(interpolatedfilter)
-sortedfilterdf = pd.DataFrame(sortedfilter)
-roundwavelength1 = np.round(interpolatedfilter[:,0])
-interpolatedfilterdf['Rounded'] = roundwavelength1
-roundwavelength2 = np.round(sortedfilter[:,0])
-sortedfilterdf['Rounded'] = roundwavelength2
-interpolatedfilterdf = pd.merge(interpolatedfilterdf, sortedfilterdf, how='left', on=['Rounded'])
-interpolatedfilterdf = interpolatedfilterdf.drop(['1_x', 'Rounded', '0_y'], axis=1)
-interpolatedfilterdf.iloc[0]['1_y'] = 0
-interpolatedfilterdf.iloc[-1]['1-y'] = 1
-plt.plot(interpolatedfilterdf.iloc[:]['0_x'], interpolatedfilterdf.iloc[:]['1_y']) #check spectrum has not changed
-plt.show(block=False)
-#interpolate tails of filter spectrum so no more NaN
-#multiply light source and filter spectra 
+sortedfilter = np.vstack((begin, sortedfilter, end))
+f = interp1d(sortedfilter[:, 0], sortedfilter[:, 1])
+interpolatedfilter[:, 1] = f(interpolatedfilter[:, 0])
+plt.plot(interpolatedfilter[:, 0], interpolatedfilter[:, 1], label='interpolated filter')
+plt.legend(loc='best')
+plt.show(block=False) 
+#multiply light source and filter spectra
+sortedfilter = np.delete(sortedfilter, 0, 0)
+sortedfilter = np.delete(sortedfilter, -1, 0)
+correctedlight = np.zeros(sortedlight.shape)
+correctedlight[:,0] = sortedlight[:, 0]
+correctedlight[:, 1] = np.multiply(sortedlight[:, 1], interpolatedfilter[:,1])
+plt.figure('light spectrum')
+plt.plot(correctedlight[:, 0], correctedlight[:, 1], label='multiplied by filter')
+#create less resolved light spectrum to match wavelength axis of all other data
+smalllight = np.zeros((bandresponses.shape[0], 2))
+smalllight[:, 0] = wavelengths
+g = interp1d(correctedlight[:,0], correctedlight[:,1])
+smalllight[:,1] = g(smalllight[:,0])
+plt.plot(smalllight[:,0], smalllight[:,1], label='less resolved spectrum')
+plt.legend(loc = 'best')
+plt.show(block = False)
 ######Creating optical transmission but should measure?
 optictrans = np.ones((bandresponses.shape[0], 1)) 
 noise = np.random.normal(0, 0.5, optictrans.shape)
@@ -79,3 +89,11 @@ for i in range(25):
     if i ==0:
         plt.legend(loc='best')
     plt.show(block=False)
+#######GENERATING A AND Aideal MATRICES
+#may need to reshape all wavelength axes similarly to light source x filter calc
+A = np.zeros(bandideal.shape)
+Aideal = np.zeros(bandideal.shape)
+for i in range(25):
+    A[:, i] = np.multiply(np.multiply(bandresponses[:, i+1], optictrans[:,0]), smalllight[:,1])
+    Aideal[:, i] = np.multiply(np.multiply(lightideal, optictransideal[:,0]), bandideal[:, i])
+#######FIND C BY MINIMISATION
