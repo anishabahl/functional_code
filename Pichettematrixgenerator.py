@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import scipy
 from scipy import interpolate
 from scipy.interpolate import interp1d
+from scipy.optimize import leastsq
+from scipy.linalg import lstsq
 import math
 ######INPUTS
 bands = 'bandresponses.csv'
@@ -18,8 +20,11 @@ newpath = '/home/ab20/Data/Calibration_file/'
 def approx_gaus(x, QE, fwhm, centre):
     sigma = 0.5*fwhm/np.sqrt(np.log(2))
     return QE*np.exp(-np.square((x-centre)/sigma))
-def findC(A, Aideal):
-    return Aideal - A*C
+def findC(C, A, Aideal):
+    C = np.reshape(C, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+    D = Aideal - np.dot(A,C)
+    return D.flatten()
+##    return np.sqrt(np.multiply(D, D))
 ######IMPORT DATA
 bandresponses = genfromtxt(path+bands, delimiter=',')
 bandresponses = np.delete(bandresponses, 0, 0)
@@ -81,7 +86,7 @@ lightideal = np.where(lightideal!=0, 1, lightideal) #ideally box function where 
 plt.figure('band responses')
 ##Approximate Gaussians for band responses
 bandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
-for i in range(25):
+for i in range(bandresponses.shape[1]-1):
     bandideal[:, i] = approx_gaus(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
 ##    plt.figure(i+1)
     plt.plot(wavelengths, bandresponses[:, i+1], color='k',  label='real')
@@ -93,7 +98,14 @@ for i in range(25):
 #may need to reshape all wavelength axes similarly to light source x filter calc
 A = np.zeros(bandideal.shape)
 Aideal = np.zeros(bandideal.shape)
-for i in range(25):
+for i in range(bandresponses.shape[1]-1):
     A[:, i] = np.multiply(np.multiply(bandresponses[:, i+1], optictrans[:,0]), smalllight[:,1])
     Aideal[:, i] = np.multiply(np.multiply(lightideal, optictransideal[:,0]), bandideal[:, i])
+for i in range(bandresponses.shape[1]-1):
+    A[:, i] = A[:, i]/A.sum(axis=0)[i]
+    Aideal[:, i] = Aideal[:, i]/Aideal.sum(axis=0)[i]
 #######FIND C BY MINIMISATION
+C, flag = leastsq(findC, x0 = np.ones(((bandresponses.shape[1]-1)**2, 1)), args=(A, Aideal))
+C = np.reshape(C, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+##C, res, rnk, s = lstsq(Aideal, A)
+print(C)
