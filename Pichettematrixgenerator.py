@@ -7,6 +7,8 @@ from scipy import interpolate
 from scipy.interpolate import interp1d
 from scipy.optimize import leastsq
 from scipy.linalg import lstsq
+import sklearn
+from sklearn.linear_model import Ridge
 import math
 ######INPUTS
 bands = 'bandresponses.csv'
@@ -16,6 +18,7 @@ lightspectrum = 'IR light with LP UV filter thorugh exoscope and adaptor.txt'
 filterdata = 'AsahiSpectra_XVL0670.csv' 
 newname = 'Pichettematrix'
 newpath = '/home/ab20/Data/Calibration_file/'
+lam = 1 #parameter for regularisation
 ######DEFINE FUNCTIONS
 def approx_gaus(x, QE, fwhm, centre):
     sigma = 0.5*fwhm/np.sqrt(np.log(2))
@@ -107,5 +110,11 @@ for i in range(bandresponses.shape[1]-1):
 #######FIND C BY MINIMISATION
 C, flag = leastsq(findC, x0 = np.ones(((bandresponses.shape[1]-1)**2, 1)), args=(A, Aideal))
 C = np.reshape(C, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
-##C, res, rnk, s = lstsq(Aideal, A)
-print(C)
+##regC, regflag = leastsq(regfindC, x0 = np.ones(((bandresponses.shape[1]-1)**2, 1)), args=(A, Aideal, 0))
+regC = Ridge(alpha = lam)
+regC.fit(A, Aideal)
+regCresult = regC.coef_
+#regCresult should be same as C when lam=0 but this is currently not true 
+##print(regC)
+##F = C-Ctest
+##G = C - regC
