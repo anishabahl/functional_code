@@ -6,28 +6,52 @@ import scipy
 from scipy import interpolate
 from scipy.interpolate import interp1d
 from scipy.optimize import leastsq
+from scipy.optimize import least_squares
 from scipy.linalg import lstsq
+from scipy.optimize import fmin_slsqp
+from scipy.optimize import minimize 
 import sklearn
 from sklearn.linear_model import Ridge
 import math
+import os
+import glob
+import spectral
+from spectral import imshow
+from spectral import envi
+import cv2
+import leastsqbound
 ######INPUTS
 bands = 'bandresponses.csv'
 path = '/home/ab20/Data/Calibration_file/'
 band_parameters = 'idealbandparameters.csv' 
 lightspectrum = 'IR light with LP UV filter thorugh exoscope and adaptor.txt'
-filterdata = 'AsahiSpectra_XVL0670.csv' 
+filterdata = 'AsahiSpectra_XVL0670.csv'
+spectrometer = 'spydercheckr_spectra_spectrometer'
+datapath = '/home/ab20/Data/System_Paper/Photonfocus/demosaiced/' #must have full hypercube data
+filetype = '.img'
 newname = 'Pichettematrix'
+newxname = 'fullxaxis'
 newpath = '/home/ab20/Data/Calibration_file/'
-lam = 1 #parameter for regularisation
+prereorder = 'ON' #should be on for PF at the moment 
+lam = 0 #parameter for regularisation
+alpha = 1 #bounds values in R matrix
 ######DEFINE FUNCTIONS
 def approx_gaus(x, QE, fwhm, centre):
     sigma = 0.5*fwhm/np.sqrt(np.log(2))
     return QE*np.exp(-np.square((x-centre)/sigma))
-def findC(C, A, Aideal):
-    C = np.reshape(C, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
-    D = Aideal - np.dot(A,C)
-    return D.flatten()
+##def findC(C, A, Aideal):
+##    C = np.reshape(C, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+##    D = Aideal - np.dot(A,C)
+##    return D.flatten()
 ##    return np.sqrt(np.multiply(D, D))
+def findR(R, C, Aideal, r, rref):
+    R = np.reshape(R, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+    D = np.dot(np.transpose(C+R), r) - np.dot(np.transpose(Aideal), rref)
+    return D.flatten()
+def findRcost(R, C, Aideal, r, rref):
+    R = np.reshape(R, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+    D = np.dot(np.transpose(C+R), r) - np.dot(np.transpose(Aideal), rref)
+    return np.sum(np.square(D))
 ######IMPORT DATA
 bandresponses = genfromtxt(path+bands, delimiter=',')
 bandresponses = np.delete(bandresponses, 0, 0)
@@ -80,6 +104,75 @@ plt.show(block = False)
 optictrans = np.ones((bandresponses.shape[0], 1)) 
 noise = np.random.normal(0, 0.5, optictrans.shape)
 optictrans = optictrans + noise
+#####importing reference data
+##spectrometerdata = genfromtxt(path+spectrometer+'.csv', delimiter=',')
+spectrometerdata = pd.read_csv(path+spectrometer+'.csv')
+cols = list(spectrometerdata.columns)
+x = cols.pop(0)
+dict = {x:x}
+for i in range(len(cols)):
+	new = cols[i][1]+cols[i][0]
+	dict[cols[i]] = new
+spectrometerdata.rename(columns = dict, inplace=True)
+spectrometerdata = spectrometerdata.to_numpy()
+#interpolate to make sure spectrometer data has same wavelength axis as the rest
+spectra = np.zeros((bandresponses.shape[0], spectrometerdata.shape[1]-1))
+for i in range(1, spectrometerdata.shape[1]):
+    h = interp1d(spectrometerdata[:, 0], spectrometerdata[:, i], fill_value="extrapolate")
+    spectra[:, i-1]=h(wavelengths)
+##spectrometerdata = np.delete(spectrometerdata, 0, 0)
+##print(str(spectrometerdata[0][:]))
+n_files = len(glob.glob1(datapath,"*" + filetype))
+n_bands = bandresponses.shape[1] - 1
+Rdata = np.zeros((n_bands, n_files))
+a = 0
+for file in sorted(os.listdir(datapath)):
+    if file.endswith(filetype):
+        #setting file specific variables
+        print(file[:-4])
+        filename = file[:-4]
+        segmentsfile = file[:2]+'_label'
+        data = envi.open(datapath+filename+'.hdr', datapath + filename + filetype)
+        Hypercubedata = data[:,:,:]
+        if prereorder == 'ON':
+            Data = np.zeros((Hypercubedata.shape))
+            Data[:,:,0] = Hypercubedata[:,:,20]
+            Data[:,:,1] = Hypercubedata[:,:,21]
+            Data[:,:,2] = Hypercubedata[:,:,22]
+            Data[:,:,3] = Hypercubedata[:,:,23]
+            Data[:,:,4] = Hypercubedata[:,:,24]
+            Data[:,:,5] = Hypercubedata[:,:,15]
+            Data[:,:,6] = Hypercubedata[:,:,16]
+            Data[:,:,7] = Hypercubedata[:,:,17]
+            Data[:,:,8] = Hypercubedata[:,:,18]
+            Data[:,:,9] = Hypercubedata[:,:,19]
+            Data[:,:,10] = Hypercubedata[:,:,10]
+            Data[:,:,11] = Hypercubedata[:,:,11]
+            Data[:,:,12] = Hypercubedata[:,:,12]
+            Data[:,:,13] = Hypercubedata[:,:,13]
+            Data[:,:,14] = Hypercubedata[:,:,14]
+            Data[:,:,15] = Hypercubedata[:,:,5]
+            Data[:,:,16] = Hypercubedata[:,:,6]
+            Data[:,:,17] = Hypercubedata[:,:,7]
+            Data[:,:,18] = Hypercubedata[:,:,8]
+            Data[:,:,19] = Hypercubedata[:,:,9]
+            Data[:,:,20] = Hypercubedata[:,:,4]
+            Data[:,:,21] = Hypercubedata[:,:,0]
+            Data[:,:,22] = Hypercubedata[:,:,1]
+            Data[:,:,23] = Hypercubedata[:,:,2]
+            Data[:,:,24] = Hypercubedata[:,:,3]
+        else:
+            Data = data[:,:,:]
+        Data = (Data - Data.min())/(Data.max() - Data.min())
+        segments = cv2.imread(datapath+segmentsfile+'.png', cv2.IMREAD_UNCHANGED)
+        segments3D = np.repeat(segments[:, :, np.newaxis], Data.shape[2], axis=2)
+        segmenteddata = np.multiply(segments3D, Data) # produces matrix of 0s everywhere except in segmented region where calibrated spectral data
+        n = np.count_nonzero(segmenteddata, axis=(0,1))
+        refdata = np.zeros((segmenteddata.shape[2],1))
+        for i in range(refdata.shape[0]):
+            refdata[i] = np.sum(segmenteddata[:,:,i])/n[i]
+        Rdata[:, a:a+1] = refdata
+        a = a+1
 ######GENERATING IDEALS
 optictransideal = np.ones((bandresponses.shape[0], 1)) #all 1 as ideally no loss of intensity
 lightideal = np.copy(wavelengths)
@@ -92,8 +185,9 @@ bandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
 for i in range(bandresponses.shape[1]-1):
     bandideal[:, i] = approx_gaus(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
 ##    plt.figure(i+1)
-    plt.plot(wavelengths, bandresponses[:, i+1], color='k',  label='real')
-    plt.plot(wavelengths, bandideal[:, i], color = 'r', label = 'ideal')
+    if i == 0: 
+        plt.plot(wavelengths, bandresponses[:, i+1], color='k',  label='real')
+        plt.plot(wavelengths, bandideal[:, i], color = 'r', label = 'ideal')
     if i ==0:
         plt.legend(loc='best')
     plt.show(block=False)
@@ -107,14 +201,32 @@ for i in range(bandresponses.shape[1]-1):
 for i in range(bandresponses.shape[1]-1):
     A[:, i] = A[:, i]/A.sum(axis=0)[i]
     Aideal[:, i] = Aideal[:, i]/Aideal.sum(axis=0)[i]
-#######FIND C BY MINIMISATION
-C, flag = leastsq(findC, x0 = np.ones(((bandresponses.shape[1]-1)**2, 1)), args=(A, Aideal))
-C = np.reshape(C, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+#######FIND C BY MINIMISATION WITH REGULARISATION
+##C, flag = leastsq(findC, x0 = np.ones(((bandresponses.shape[1]-1)**2, 1)), args=(A, Aideal))
+##C = np.reshape(C, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
 ##regC, regflag = leastsq(regfindC, x0 = np.ones(((bandresponses.shape[1]-1)**2, 1)), args=(A, Aideal, 0))
 regC = Ridge(alpha = lam)
 regC.fit(A, Aideal)
 regCresult = regC.coef_
-#regCresult should be same as C when lam=0 but this is currently not true 
+#regCresult should be same as C when lam=0 but is transpose probably because of all flattening and reshaping
 ##print(regC)
 ##F = C-Ctest
 ##G = C - regC
+#######FIND R BY REFINEMENT
+a = (-alpha, alpha)
+bounds = ((a, )*((bandresponses.shape[1]-1)**2))
+##R, flag = leastsq(findR, x0 = np.ones(((bandresponses.shape[1]-1)**2, 1)), args=(regCresult, Aideal, Rdata, spectra))
+#originally used leastsq but not able to bound values so use SLSQP now which gives different results with same input but still gives mostly good fit
+resR = minimize(findRcost, x0 = np.ones(((bandresponses.shape[1]-1)**2, )), bounds=bounds, args=(regCresult, Aideal, Rdata, spectra), method='SLSQP')
+altR = resR.x
+altR = np.reshape(altR, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+altR = np.transpose(altR)
+##R, flag = leastsq(findR, x0 = np.ones((regCresult.shape)), args=(regCresult, Aideal, Rdata, spectra))
+##R = np.reshape(R, (bandresponses.shape[1]-1, bandresponses.shape[1]-1))
+##R = np.transpose(R)
+regCresult = np.transpose(regCresult)
+CR = regCresult + altR
+Array = pd.DataFrame(CR)
+Array.to_csv(newpath+newname+'.csv', index=False)
+Array2 = pd.DataFrame(bandparameters[0, :])
+Array2.to_csv(newpath+newxname+'.csv', index=False)
