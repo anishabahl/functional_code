@@ -15,18 +15,18 @@ import h5py
 #######INPUTS
 #currently for photonfocus: filetype = .img, calibratedata = on, prereorder = on, separatexaxis = on
 #imec is opposite
-datapath = '/home/ab20/Data/System_Paper/Photonfocus/demosaiced/' #path to data
+datapath = '/home/ab20/Data/System_Paper/Photonfocus/v2demosaiced/' #path to data
 filetype = '.img' #.img or .raw
 camera = 'photonfocus'
 calibrationpath = '/home/ab20/Data/Calibration_file/' #only necessary for calibration and spectrometer data so if turned off does not matter
 calibratedata = 'ON' #currently should always be off for imec
 prereorder = 'ON' #Put on if necessary to reorder hypercube prior to calibration
-calibrationfile = 'Pichettematrix' #name of calibration csv file
-newlocation = '/home/ab20/Data/System_Paper/Photonfocus/calibrated_data/' #name of new location to put new files (must already exist)
+calibrationfile = 'C+R_lambda=0.0005_alpha=0.05' #name of calibration csv file
+newlocation = '/home/ab20/Data/Pichette/halfv1/onV2/' #name of new location to put new files (must already exist)
 Spectra = 'ON' #'ON' if want to plot spectra similar to system paper
 plottype = 'collective' #options are individual or collective
 spectrometer = 'spydercheckr_spectra_spectrometer' #file with spectrometer data from checkerboard
-plotcomparison = 'ON' #if want to plot previous data from .h5 file
+plotcomparison = 'OFF' #if want to plot previous data from .h5 file
 comparepath = '/home/ab20/Data/analysis/' #path to existing photonfocus and imec data for comparison
 comparedata = 'checkerboard_photonfocus_v1.h5' #file with existing photonfocus or imec data for comparison
 separatexaxis = 'ON' #on for photonfocus off for imec at the moment
@@ -37,7 +37,8 @@ tilearray = np.array([['1A', '2A', '3A', '4A', '5A', '6A'], ['1B', '2B', '3B', '
 if plottype == 'collective':
     fig, axs = plt.subplots(tilearray.shape[0], tilearray.shape[1], sharex=True, sharey=True, figsize = [12, 12])
     plt.subplots_adjust(hspace = 0.25)
-for file in os.listdir(datapath):
+tosave = np.zeros((23, len(tiles))) #need to find way of counting bands here for 23
+for file in sorted(os.listdir(datapath)):
     if file.endswith(filetype):
         #setting file specific variables
         print(file[:-4])
@@ -119,6 +120,7 @@ for file in os.listdir(datapath):
             spectrum = np.zeros((calibrateddata.shape[2], 1))
             for i in range(spectrum.shape[0]):
                 spectrum[i] = np.sum(segmenteddata[:,:,i])/n[i] #creates y axis of spectrum
+            tosave[:, tile] = spectrum[:, 0]
             spectrum = np.hstack((xaxis, spectrum))
             spectrum = spectrum[np.argsort(spectrum[:, 0])]
             if plottype == 'individual':
@@ -153,3 +155,5 @@ if plottype == 'collective':
 ##    plt.legend(loc = 'lower center')
     plt.show(block=False)
     plt.savefig(newlocation + ' spectrum')
+Array = pd.DataFrame(tosave)
+Array.to_csv(newlocation + 'data.csv', index=False)
