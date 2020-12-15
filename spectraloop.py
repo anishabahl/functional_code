@@ -15,14 +15,14 @@ import h5py
 #######INPUTS
 #currently for photonfocus: filetype = .img, calibratedata = on, prereorder = on, separatexaxis = on
 #imec is opposite
-datapath = '/home/ab20/Data/System_Paper/Photonfocus/v2demosaiced/' #path to data
+datapath = '/home/ab20/Data/System_Paper/Photonfocus/demosaiced/' #path to data
 filetype = '.img' #.img or .raw
 camera = 'photonfocus'
 calibrationpath = '/home/ab20/Data/Calibration_file/' #only necessary for calibration and spectrometer data so if turned off does not matter
 calibratedata = 'ON' #currently should always be off for imec
 prereorder = 'ON' #Put on if necessary to reorder hypercube prior to calibration
-calibrationfile = 'C+R_lambda=0.0005_alpha=0.05' #name of calibration csv file
-newlocation = '/home/ab20/Data/Pichette/halfv1/onV2/' #name of new location to put new files (must already exist)
+calibrationfile = 'C+R_lambda=0.0005_alpha=0.05_A_' #name of calibration csv file
+newlocation = '/home/ab20/Data/Pichette/nocalibration/onV1/' #name of new location to put new files (must already exist)
 Spectra = 'ON' #'ON' if want to plot spectra similar to system paper
 plottype = 'collective' #options are individual or collective
 spectrometer = 'spydercheckr_spectra_spectrometer' #file with spectrometer data from checkerboard
@@ -52,41 +52,39 @@ for file in sorted(os.listdir(datapath)):
         #######IMPORTING DATA
         data = envi.open(datapath+filename+'.hdr', datapath + filename + filetype)
         Hypercubedata = data[:,:,:]
+        if prereorder == 'ON':
+            Data = np.zeros((Hypercubedata.shape))
+            Data[:,:,0] = Hypercubedata[:,:,20]
+            Data[:,:,1] = Hypercubedata[:,:,21]
+            Data[:,:,2] = Hypercubedata[:,:,22]
+            Data[:,:,3] = Hypercubedata[:,:,23]
+            Data[:,:,4] = Hypercubedata[:,:,24]
+            Data[:,:,5] = Hypercubedata[:,:,15]
+            Data[:,:,6] = Hypercubedata[:,:,16]
+            Data[:,:,7] = Hypercubedata[:,:,17]
+            Data[:,:,8] = Hypercubedata[:,:,18]
+            Data[:,:,9] = Hypercubedata[:,:,19]
+            Data[:,:,10] = Hypercubedata[:,:,10]
+            Data[:,:,11] = Hypercubedata[:,:,11]
+            Data[:,:,12] = Hypercubedata[:,:,12]
+            Data[:,:,13] = Hypercubedata[:,:,13]
+            Data[:,:,14] = Hypercubedata[:,:,14]
+            Data[:,:,15] = Hypercubedata[:,:,5]
+            Data[:,:,16] = Hypercubedata[:,:,6]
+            Data[:,:,17] = Hypercubedata[:,:,7]
+            Data[:,:,18] = Hypercubedata[:,:,8]
+            Data[:,:,19] = Hypercubedata[:,:,9]
+            Data[:,:,20] = Hypercubedata[:,:,4]
+            Data[:,:,21] = Hypercubedata[:,:,0]
+            Data[:,:,22] = Hypercubedata[:,:,1]
+            Data[:,:,23] = Hypercubedata[:,:,2]
+            Data[:,:,24] = Hypercubedata[:,:,3]
+        else:
+            Data = data[:,:,:]
         if calibratedata == 'ON':
             calibration = genfromtxt(calibrationpath+calibrationfile+'.csv', delimiter=',')
             calibration = np.delete(calibration,0,0)
             calibration = np.transpose(calibration)
-            if prereorder == 'ON':
-                Data = np.zeros((Hypercubedata.shape))
-                Data[:,:,0] = Hypercubedata[:,:,20]
-                Data[:,:,1] = Hypercubedata[:,:,21]
-                Data[:,:,2] = Hypercubedata[:,:,22]
-                Data[:,:,3] = Hypercubedata[:,:,23]
-                Data[:,:,4] = Hypercubedata[:,:,24]
-                Data[:,:,5] = Hypercubedata[:,:,15]
-                Data[:,:,6] = Hypercubedata[:,:,16]
-                Data[:,:,7] = Hypercubedata[:,:,17]
-                Data[:,:,8] = Hypercubedata[:,:,18]
-                Data[:,:,9] = Hypercubedata[:,:,19]
-                Data[:,:,10] = Hypercubedata[:,:,10]
-                Data[:,:,11] = Hypercubedata[:,:,11]
-                Data[:,:,12] = Hypercubedata[:,:,12]
-                Data[:,:,13] = Hypercubedata[:,:,13]
-                Data[:,:,14] = Hypercubedata[:,:,14]
-                Data[:,:,15] = Hypercubedata[:,:,5]
-                Data[:,:,16] = Hypercubedata[:,:,6]
-                Data[:,:,17] = Hypercubedata[:,:,7]
-                Data[:,:,18] = Hypercubedata[:,:,8]
-                Data[:,:,19] = Hypercubedata[:,:,9]
-                Data[:,:,20] = Hypercubedata[:,:,4]
-                Data[:,:,21] = Hypercubedata[:,:,0]
-                Data[:,:,22] = Hypercubedata[:,:,1]
-                Data[:,:,23] = Hypercubedata[:,:,2]
-                Data[:,:,24] = Hypercubedata[:,:,3]
-            else:
-                Data = data[:,:,:]
-        else:
-            Data = Hypercubedata
         if Spectra == 'ON':
             segments = cv2.imread(datapath+segmentsfile+'.png', cv2.IMREAD_UNCHANGED)
             spectrometerdata = genfromtxt(calibrationpath+spectrometer+'.csv', delimiter=',')
@@ -111,7 +109,7 @@ for file in sorted(os.listdir(datapath)):
         ###########SAVE AS CALIBRATED IMAGE
             img = envi.save_image(newlocation+newfilename+'.hdr', calibrateddata, shape = calibrateddata.shape, dtype=np.float32, force=True)
         else:
-            calibrateddata = Data
+            calibrateddata = (Data - Data.min())/(Data.max() - Data.min())
         ###########PLOTTING SPECTRA
         if Spectra == 'ON':
             segments3D = np.repeat(segments[:, :, np.newaxis], calibrateddata.shape[2], axis=2)
