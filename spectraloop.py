@@ -19,10 +19,10 @@ datapath = '/home/ab20/Data/System_Paper/Photonfocus/demosaiced/' #path to data
 filetype = '.img' #.img or .raw
 camera = 'photonfocus'
 calibrationpath = '/home/ab20/Data/Calibration_file/' #only necessary for calibration and spectrometer data so if turned off does not matter
-calibratedata = 'ON' #currently should always be off for imec
+calibratedata = 'OFF' #currently should always be off for imec
 prereorder = 'ON' #Put on if necessary to reorder hypercube prior to calibration
-calibrationfile = 'C+R_lambda=0.0005_alpha=0.05_A_' #name of calibration csv file
-newlocation = '/home/ab20/Data/Pichette/nocalibration/onV1/' #name of new location to put new files (must already exist)
+calibrationfile = 'calibrationmatrix' #name of calibration csv file
+newlocation = '/home/ab20/Data/System_Paper/Photonfocus/nocalibration/onV1' #name of new location to put new files (must already exist)
 Spectra = 'ON' #'ON' if want to plot spectra similar to system paper
 plottype = 'collective' #options are individual or collective
 spectrometer = 'spydercheckr_spectra_spectrometer' #file with spectrometer data from checkerboard
@@ -30,14 +30,17 @@ plotcomparison = 'OFF' #if want to plot previous data from .h5 file
 comparepath = '/home/ab20/Data/analysis/' #path to existing photonfocus and imec data for comparison
 comparedata = 'checkerboard_photonfocus_v1.h5' #file with existing photonfocus or imec data for comparison
 separatexaxis = 'ON' #on for photonfocus off for imec at the moment
-bandwavelengths = 'fullxaxis' #file with xaxis if separate
+bandwavelengths = 'fullxaxis25' #file with xaxis if separate
 #######list to identify correct tile data in spectrometer and .h5 files
 tiles = ['0', '1A', '2A', '3A', '4A', '5A', '6A', '1B', '2B', '3B', '4B', '5B', '6B', '1C', '2C', '3C', '4C', '5C', '6C', '1D', '2D', '3D', '4D', '5D', '6D', '1E', '2E', '3E', '4E', '5E', '6E', '1F', '2F', '3F', '4F', '5F', '6F', '1G', '2G', '3G', '4G', '5G', '6G', '1H', '2H', '3H', '4H', '5H', '6H']
 tilearray = np.array([['1A', '2A', '3A', '4A', '5A', '6A'], ['1B', '2B', '3B', '4B', '5B', '6B'], ['1C', '2C', '3C', '4C', '5C', '6C'], ['1D', '2D', '3D', '4D', '5D', '6D'], ['1E', '2E', '3E', '4E', '5E', '6E'], ['1F', '2F', '3F', '4F', '5F', '6F'], ['1G', '2G', '3G', '4G', '5G', '6G'], ['1H', '2H', '3H', '4H', '5H', '6H']])
 if plottype == 'collective':
     fig, axs = plt.subplots(tilearray.shape[0], tilearray.shape[1], sharex=True, sharey=True, figsize = [12, 12])
     plt.subplots_adjust(hspace = 0.25)
-tosave = np.zeros((23, len(tiles))) #need to find way of counting bands here for 23
+if calibratedata == 'ON':
+    tosave = np.zeros((23, len(tiles))) #need to find way of counting bands here for 23
+if calibratedata == 'OFF':
+    tosave = np.zeros((25, len(tiles)))
 for file in sorted(os.listdir(datapath)):
     if file.endswith(filetype):
         #setting file specific variables

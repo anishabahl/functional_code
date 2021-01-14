@@ -9,11 +9,11 @@ from spectral import imshow
 from spectral import envi
 import xml.etree.ElementTree as ET
 #######INPUTS
-data = '/home/ab20/Data/System_Paper/Photonfocus/raw_data/' #path to data
+data = '/home/ab20/Data/System_Paper/Photonfocus/v2/' #path to data
 filetype = '.png'
 whitename = 'ref_white' #white reference image name
 darkname = 'ref_dark' #dark reference image name
-newlocation = '/home/ab20/Data/System_Paper/Photonfocus/demosaiced/' #name of new location to put new files (must already exist)
+newlocation = '/home/ab20/Data/System_Paper/Photonfocus/v2demosaiced/' #name of new location to put new files (must already exist)
 for file in os.listdir(data):
     if file.endswith(filetype):
         if not file.endswith('label'+filetype):
