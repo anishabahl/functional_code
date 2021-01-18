@@ -15,14 +15,14 @@ import h5py
 #######INPUTS
 #currently for photonfocus: filetype = .img, calibratedata = on, prereorder = on, separatexaxis = on
 #imec is opposite
-datapath = '/home/ab20/Data/System_Paper/Photonfocus/demosaiced/' #path to data
+datapath = '/home/ab20/Data/System_Paper/Photonfocus/v2demosaiced/' #path to data
 filetype = '.img' #.img or .raw
 camera = 'photonfocus'
 calibrationpath = '/home/ab20/Data/Calibration_file/' #only necessary for calibration and spectrometer data so if turned off does not matter
 calibratedata = 'OFF' #currently should always be off for imec
 prereorder = 'ON' #Put on if necessary to reorder hypercube prior to calibration
 calibrationfile = 'calibrationmatrix' #name of calibration csv file
-newlocation = '/home/ab20/Data/System_Paper/Photonfocus/nocalibration/onV1' #name of new location to put new files (must already exist)
+newlocation = '/home/ab20/Data/Pichette/nocalibration/onV2/' #name of new location to put new files (must already exist)
 Spectra = 'ON' #'ON' if want to plot spectra similar to system paper
 plottype = 'collective' #options are individual or collective
 spectrometer = 'spydercheckr_spectra_spectrometer' #file with spectrometer data from checkerboard

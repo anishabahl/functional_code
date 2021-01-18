@@ -3,16 +3,16 @@ import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
 ##########INPUTS
-v1path = '/home/ab20/Data/Pichette/v1/onV1/' #change last section for which dataset plotting
-v2path = '/home/ab20/Data/Pichette/v2/onV1/'
-halfv1path = '/home/ab20/Data/Pichette/halfv1/onV1/'
-paper = '/home/ab20/Data/System_Paper/Photonfocus/paperv1/'
-nocalpath = '/home/ab20/Data/Pichette/nocalibration/onV1/'
+v1path = '/home/ab20/Data/Pichette/v1/onV2/' #change last section for which dataset plotting
+v2path = '/home/ab20/Data/Pichette/v2/onV2/'
+halfv1path = '/home/ab20/Data/Pichette/halfv2/onv2/'
+paper = '/home/ab20/Data/Pichette/outofbox/onv2/'
+nocalpath = '/home/ab20/Data/Pichette/nocalibration/onV2/'
 calibrationpath = '/home/ab20/Data/Calibration_file/'
 bandwavelengths = 'fullxaxis'
 bandwavelengths3 = 'fullxaxis25'
 paperwavelengths = 'bandwavelengths'
-newlocation = '/home/ab20/Data/Pichette/collectivev1/'
+newlocation = '/home/ab20/Data/Pichette/collectivev2/'
 spectrometer = 'spydercheckr_spectra_spectrometer'
 ##########IMPORT
 v1data = genfromtxt(v1path + 'data.csv', delimiter = ',')
@@ -63,7 +63,7 @@ for i in range(v1data.shape[1]):
     axs[coord[0], coord[1]].plot(paperspec[:, 0], paperspec[:, 1], label='using premade matrix')
     axs[coord[0], coord[1]].plot(v1spec[:, 0], v1spec[:, 1], label='fitted on v1')
     axs[coord[0], coord[1]].plot(v2spec[:, 0], v2spec[:, 1], label='fitted on v2')
-    axs[coord[0], coord[1]].plot(halfv1spec[:, 0], halfv1spec[:, 1], label='fitted on half v1')
+    axs[coord[0], coord[1]].plot(halfv1spec[:, 0], halfv1spec[:, 1], label='fitted on half v2')
     axs[coord[0], coord[1]].plot(spectrometerdata[:, 0], spectrometerdata[:, i+1], label='spectrometer')
     axs[coord[0], coord[1]].plot(nocalspec[:, 0], nocalspec[:, 1], label='no cross-talk correction')
     axs[coord[0], coord[1]].set_title(tile, fontsize = 8)

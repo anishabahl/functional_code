@@ -61,10 +61,8 @@ def findRcost(R, C, Aideal, r, rref):
     D = np.dot(np.transpose(C+R), r) - np.dot(np.transpose(Aideal), rref)
     return np.sum(np.square(D))
 def lorentz(x, QE, fwhm, centre):
-    x2 = scipy.constants.c/x
-    fwhm2 = (-scipy.constants.c/centre**2)*fwhm
-    centre2 = scipy.constants.c/centre 
-    y = fwhm2**2/(fwhm2**2 + 4*(x2-centre2)**2)
+    p = math.sqrt(4*centre**2 + fwhm**2) - 2*centre
+    y = (p*x)/((x-centre)**2 + p*x)
     y2 = QE*y
     return y2
 ######IMPORT DATA
@@ -267,11 +265,11 @@ for j in range(len(lam)):
             resR = minimize(findRcost, x0 = np.zeros(((bandresponses.shape[1]-1)*(bandresponses.shape[1]-3), )), bounds=bounds, args=(regCresult, Aideal, Rdata, spectra), method='SLSQP', options={'disp': True})
             altR = resR.x
             altR = np.reshape(altR, (bandresponses.shape[1]-1, bandresponses.shape[1]-3))
-            saveresid[j*len(alpha)+k-1, 0] = lam[j]
-            saveresid[j*len(alpha)+k-1, 1] = alpha[k]
-            saveresid[j*len(alpha)+k-1, 2] = resid.sum()
-            saveresid[j*len(alpha)+k-1, 3] = resR.fun
-            saveresid[j*len(alpha)+k-1, 4] = (abs(altR)>=alpha[k]).sum()
+            saveresid[j*len(alpha)+k, 0] = lam[j]
+            saveresid[j*len(alpha)+k, 1] = alpha[k]
+            saveresid[j*len(alpha)+k, 2] = resid.sum()
+            saveresid[j*len(alpha)+k, 3] = resR.fun
+            saveresid[j*len(alpha)+k, 4] = (abs(altR)>=alpha[k]).sum()
     if optRmethod == 'least_sq':
         residR = np.zeros((Aideal.shape[1]))
         R = np.zeros((bandresponses.shape[1]-1, Aideal.shape[1]))
@@ -300,7 +298,7 @@ name = 'C+R_lambda=' + str(lam) + '_alpha=' + str(alpha)
 figCR.savefig(str(imagepath)+name+'.png')
 save_resid = pd.DataFrame(saveresid)
 save_resid.columns = ['lambda', 'alpha', 'C resid', 'R resid', 'hit bounds']
-save_resid.to_csv(parameterpath+'Run1.csv', index=False)
+save_resid.to_csv(parameterpath+'Run7.csv', index=False)
 Array = pd.DataFrame(CR)
 Array.to_csv(newpath+name+'.csv', index=False)
 Array2 = pd.DataFrame(bandparameters[0, :])

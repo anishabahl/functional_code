@@ -37,7 +37,7 @@ newxname = 'fullxaxis'
 newpath = '/home/ab20/Data/Calibration_file/'
 imagepath = '/home/ab20/Data/Pichette/halfv1/' #path to save new images
 prereorder = 'ON' #should be on for PF at the moment
-idealmethod = 'Lorentzian' #Lorentzian or Gaussian or ApproxLorentzian
+idealmethod = 'Gaussian' #Lorentzian or Gaussian or ApproxLorentzian
 lam = 0.005 #parameter for regularisation
 optCmethod = 'lsmr' #options are scikit 'Ridge' and 'lsmr'
 optRmethod = 'SLSQP' #options are scipy minimise 'SLSQP' and 'least_sq'
@@ -204,18 +204,37 @@ lightideal = np.where(lightideal!=0, 1, lightideal) #ideally box function where 
 plt.figure('band responses')
 ##Approximate Gaussians for band responses
 bandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
+Gaussbandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
+Lorentzbandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
+ApproxLorentzbandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
 cmap = plt.cm.Greys
 colors = [cmap(i) for i in range(cmap.N)]
 cmap2 = plt.cm.Greens
 colors2 = [cmap2(i) for i in range(cmap2.N)]
+Paramsarray = np.zeros((bandresponses.shape[1]-1,11))
 for i in range(bandresponses.shape[1]-1):
-    if idealmethod == 'Gaussian':
-        bandideal[:, i] = approx_gaus(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
-##    plt.figure(i+1)
-    if idealmethod == 'Lorentzian':
-        bandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
-    if idealmethod == 'ApproxLorentzian':
-        bandideal[:, i] = approx_lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
+    bandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
+    Gaussbandideal[:, i] = approx_gaus(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
+    Lorentzbandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
+    ApproxLorentzbandideal[:, i] = approx_lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
+    Gausscontrib = np.trapz(Gaussbandideal[:, i], wavelengths)/np.trapz(bandresponses[:, i+1], wavelengths)
+    Lorentzcontrib = np.trapz(Lorentzbandideal[:, i], wavelengths)/np.trapz(bandresponses[:, i+1], wavelengths)
+    ApproxLorentzcontrib = np.trapz(ApproxLorentzbandideal[:, i], wavelengths)/np.trapz(bandresponses[:, i+1], wavelengths)
+    Gausserr = np.sum((bandresponses[:, i+1] - Gaussbandideal[:, i])**2)
+    Lorentzerr = np.sum((bandresponses[:, i+1] - Lorentzbandideal[:, i])**2)
+    ApproxLorentzerr = np.sum((bandresponses[:, i+1] - ApproxLorentzbandideal[:, i])**2)
+    #Paramsarray[i, 0] = bandparameters[0, i]
+    #Paramsarray[i, 1] = bandparameters[1, i]
+    #Paramsarray[i, 2] = bandparameters[2, i]
+    #Paramsarray[i, 3] = bandparameters[3, i]
+    #Paramsarray[i, 4] = bandparameters[4, i]
+    Paramsarray[i, 0:5] = bandparameters[0:5, i]
+    Paramsarray[i, 6] = Gausscontrib
+    Paramsarray[i, 5] = Gausserr
+    Paramsarray[i, 8] = Lorentzcontrib
+    Paramsarray[i, 7] = Lorentzerr
+    Paramsarray[i, 10] = ApproxLorentzcontrib
+    Paramsarray[i, 9] = ApproxLorentzerr
     plt.plot(wavelengths, bandresponses[:, i+1], color=colors[-i*7],  label='real')
     plt.plot(wavelengths, bandideal[:, i], color = colors2[-i*7], label = 'ideal')
     if i ==0:
@@ -299,3 +318,6 @@ Array.to_csv(newpath+name+'.csv', index=False)
 Array2 = pd.DataFrame(bandparameters[0, :])
 Array2 = Array2.drop([20,21])
 Array2.to_csv(newpath+newxname+'.csv', index=False)
+ParamsArray = pd.DataFrame(Paramsarray)
+ParamsArray.columns = ['central wavelength', 'FWHM', 'QE', 'imec fit error', 'imec contribution', 'Gaussian fit error', 'Gaussian contribution', 'Lorentzian fit error', 'Lorentzian contribution', 'Approx Lorentzian fit error', 'Approx Lorentzian contribution']
+ParamsArray.to_csv(newpath+'Ideal_band_responses.csv', index=False)

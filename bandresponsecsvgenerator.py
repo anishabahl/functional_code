@@ -17,7 +17,7 @@ wcolumn = np.reshape(wcolumn, (wcolumn.shape[0], 1))
 columns_tree = root.findall("./filter_info/filter_zones/filter_zone/bands/band")
 parameter_tree = root.findall('./filter_info/filter_zones/filter_zone/bands/band/peaks/peak[@order="1"]')
 array = np.zeros((wcolumn.shape[0], len(columns_tree)))
-array2 = np.zeros((3, len(columns_tree)))
+array2 = np.zeros((5, len(columns_tree)))
 for i, columns_tree in enumerate(columns_tree):
     band = np.fromstring(columns_tree.find("response").text, sep=" , ")
     array[:, i] = band
@@ -27,6 +27,10 @@ for i, columns_tree in enumerate(columns_tree):
     array2[1, i] = parameter1
     parameter2 = np.fromstring(parameter_tree[i].find("QE").text, sep=" , ")
     array2[2, i] = parameter2
+    parameter3 = np.fromstring(parameter_tree[i].find("fit_error").text, sep=" , ")
+    array2[3, i] = parameter3
+    parameter4 = np.fromstring(parameter_tree[i].find("contribution").text, sep=" , ")
+    array2[4, i] = parameter4
 whole = np.hstack((wcolumn, array))
 #######SAVE
 Array = pd.DataFrame(whole)
