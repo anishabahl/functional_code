@@ -201,7 +201,9 @@ lightideal = np.copy(wavelengths)
 lightideal = np.where(lightideal>1000, 0, lightideal)
 lightideal = np.where(lightideal<670, 0, lightideal)
 lightideal = np.where(lightideal!=0, 1, lightideal) #ideally box function where changes at 670 and 1000nm
-plt.figure('band responses')
+plt.figure('Gaussian band responses')
+plt.figure('Lorentzian band responses')
+plt.figure('Approximate Lorentzian band responses')
 ##Approximate Gaussians for band responses
 bandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
 Gaussbandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
@@ -211,6 +213,10 @@ cmap = plt.cm.Greys
 colors = [cmap(i) for i in range(cmap.N)]
 cmap2 = plt.cm.Greens
 colors2 = [cmap2(i) for i in range(cmap2.N)]
+cmap3 = plt.cm.Blues
+colors3 = [cmap3(i) for i in range(cmap3.N)]
+cmap4 = plt.cm.Reds
+colors4 = [cmap4(i) for i in range(cmap4.N)]
 Paramsarray = np.zeros((bandresponses.shape[1]-1,11))
 for i in range(bandresponses.shape[1]-1):
     bandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
@@ -235,12 +241,35 @@ for i in range(bandresponses.shape[1]-1):
     Paramsarray[i, 7] = Lorentzerr
     Paramsarray[i, 10] = ApproxLorentzcontrib
     Paramsarray[i, 9] = ApproxLorentzerr
+    plt.figure('Gaussian band responses')
     plt.plot(wavelengths, bandresponses[:, i+1], color=colors[-i*7],  label='real')
-    plt.plot(wavelengths, bandideal[:, i], color = colors2[-i*7], label = 'ideal')
+    plt.plot(wavelengths, Gaussbandideal[:, i], color = colors2[-i*7], label ="Gaussian ideal")
     if i ==0:
         plt.legend(loc='best')
-    plt.show(block=False)
-    plt.savefig(imagepath+'Band_responses')
+    #plt.show(block=False)
+    plt.savefig(imagepath+'Gaussian_band_responses')
+    plt.figure('Lorentzian band responses')
+    plt.plot(wavelengths, bandresponses[:, i + 1], color=colors[-i * 7], label='real')
+    plt.plot(wavelengths, Lorentzbandideal[:, i], color=colors3[-i * 7], label="Lorentzian ideal")
+    if i ==0:
+        plt.legend(loc='best')
+    #plt.show(block=False)
+    plt.savefig(imagepath+'Lorentzian_band_responses')
+    plt.figure('Approximate Lorentzian band responses')
+    plt.plot(wavelengths, bandresponses[:, i + 1], color=colors[-i * 7], label='real')
+    plt.plot(wavelengths, ApproxLorentzbandideal[:, i], color=colors4[-i * 7], label="Approximate Lorentzian ideal")
+    if i ==0:
+        plt.legend(loc='best')
+    #plt.show(block=False)
+    plt.savefig(imagepath+'Approximate_Lorentzian_band_responses')
+    plt.figure(str(i+1)+'th_band_response')
+    plt.plot(wavelengths, bandresponses[:, i + 1], color=colors[-i * 7], label='real')
+    plt.plot(wavelengths, Gaussbandideal[:, i], color='green', label="Gaussian ideal")
+    plt.plot(wavelengths, Lorentzbandideal[:, i], color='red', label="Lorentzian ideal")
+    plt.plot(wavelengths, ApproxLorentzbandideal[:, i], color='blue', label="Approximate Lorentzian ideal")
+    plt.legend(loc='best')
+    #plt.show(block=False)
+    plt.savefig(imagepath + str(i+1)+'th_band_response')
 #######GENERATING A AND Aideal MATRICES
 #may need to reshape all wavelength axes similarly to light source x filter calc
 A = np.zeros(bandideal.shape)
