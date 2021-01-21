@@ -106,7 +106,6 @@ sortedfilter[:,1] = (sortedfilter[:,1]-sortedfilter[:,1].min())/(sortedfilter[:,
 plt.figure("filter spectrum")
 sortedimecfilter1[:,1] = (sortedimecfilter1[:,1]-sortedimecfilter1[:,1].min())/(sortedimecfilter1[:,1].max()-sortedimecfilter1[:,1].min())
 sortedimecfilter2[:,1] = (sortedimecfilter2[:,1]-sortedimecfilter2[:,1].min())/(sortedimecfilter2[:,1].max()-sortedimecfilter2[:,1].min())
-plt.figure("imec filter spectrum")
 #plt.plot(sortedfilter[:, 0], sortedfilter[:, 1], label='original filter spectrum')
 #expand filter array to be same shape as light source spectrum 
 interpolatedfilter = np.zeros(sortedlight.shape)
@@ -124,15 +123,19 @@ plt.savefig(imagepath+'Filter_Spectrum')
 #expand filter to be same shape as band response spectrum
 interpolatedimecfilter1 = np.zeros((bandresponses.shape[0], 2))
 interpolatedimecfilter1[:,0] = bandresponses[:, 0]
-#begin = np.array([0, 0])
-#end = np.array([1200, 1])
-#sortedfilter = np.vstack((begin, sortedfilter, end))
+b1 = np.array([399.998, 0])
+e1 = np.array([1000.0, 1])
+sortedimecfilter1 = np.vstack((b1, sortedimecfilter1, e1))
 imecf1 = interp1d(sortedimecfilter1[:, 0], sortedimecfilter1[:, 1])
-interpolatedimecfilter1[:, 1] = f(interpolatedimecfilter1[:, 0])
+interpolatedimecfilter1[:, 1] = imecf1(interpolatedimecfilter1[:, 0])
+
 interpolatedimecfilter2 = np.zeros((bandresponses.shape[0], 2))
 interpolatedimecfilter2[:,0] = bandresponses[:, 0]
+b2 = np.array([399.998, 1])
+e2 = np.array([1000.0, 0])
+sortedimecfilter2 = np.vstack((b2, sortedimecfilter2, e2))
 imecf2 = interp1d(sortedimecfilter2[:, 0], sortedimecfilter2[:, 1])
-interpolatedimecfilter2[:, 1] = f(interpolatedimecfilter2[:, 0])
+interpolatedimecfilter2[:, 1] = imecf2(interpolatedimecfilter2[:, 0])
 plt.figure("imec filter spectrum")
 plt.plot(interpolatedimecfilter1[:, 0], interpolatedimecfilter1[:, 1], label='imec longpass filter spectrum')
 plt.plot(interpolatedimecfilter2[:, 0], interpolatedimecfilter2[:, 1], label='imec shortpass filter spectrum')
