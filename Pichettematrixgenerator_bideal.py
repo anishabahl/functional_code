@@ -26,22 +26,27 @@ import leastsqbound
 ######INPUTS
 bands = 'bandresponses.csv'
 path = '/home/ab20/Data/Calibration_file/'
-band_parameters = 'idealbandparameters.csv' 
+band_parameters = 'idealbandparameters.csv'
+secondpeak_parameters = 'idealbandparameterssecondpeak.csv'
 lightspectrum = 'IR light with LP UV filter thorugh exoscope and adaptor.txt'
 filterdata = 'AsahiSpectra_XVL0670.csv'
+imecfilter_1 = 'longpass_filter.csv'
+imecfilter_2 = 'shortpass_filter.csv'
 spectrometer = 'spydercheckr_spectra_spectrometer'
 datapath = '/home/ab20/Data/System_Paper/Photonfocus/halfv1demosaiced/' #must have full hypercube data
 filetype = '.img'
 newname = 'Pichettematrix'
 newxname = 'fullxaxis'
 newpath = '/home/ab20/Data/Calibration_file/'
-imagepath = '/home/ab20/Data/Pichette/halfv1/' #path to save new images
+imagepath = '/home/ab20/Data/Pichette/bideal/secondary_peak_imecfilter/' #path to save new images
 prereorder = 'ON' #should be on for PF at the moment
 idealmethod = 'Gaussian' #Lorentzian or Gaussian or ApproxLorentzian
 lam = 0.005 #parameter for regularisation
 optCmethod = 'lsmr' #options are scikit 'Ridge' and 'lsmr'
 optRmethod = 'SLSQP' #options are scipy minimise 'SLSQP' and 'least_sq'
 alpha = 0.05 #bounds values in R matrix
+filterbandresponses = 'ON' #uses imec filters on measured band responses
+secondarypeaks = 'ON' #fits and plots secondary peaks
 ######DEFINE FUNCTIONS
 def approx_gaus(x, QE, fwhm, centre):
     sigma = 0.5*fwhm/np.sqrt(np.log(2))
@@ -77,13 +82,21 @@ bandresponses = np.delete(bandresponses, 0, 0)
 wavelengths = bandresponses[:, 0]
 bandparameters = genfromtxt(path+band_parameters, delimiter=',')
 bandparameters = np.delete(bandparameters,0, 0)
+bandparameters2 = genfromtxt(path+secondpeak_parameters, delimiter=',')
+bandparameters2 = np.delete(bandparameters2,0,0)
 lightsource = genfromtxt(path+lightspectrum, skip_header = 14, delimiter = '\t')
 filterspectrum = genfromtxt(path+filterdata, delimiter=',')
 filterspectrum = np.delete(filterspectrum,0,0)
+imecfilter1 = genfromtxt(path+imecfilter_1, delimiter=',')
+imecfilter1 = np.delete(imecfilter1, 0, 0)
+imecfilter2 = genfromtxt(path+imecfilter_2, delimiter=',')
+imecfilter2 = np.delete(imecfilter2, 0,0)
 ######Light source spectrum = spectrum x filterspectrum
 #sort so both ascending wavelengths
 sortedlight = lightsource[np.argsort(lightsource[:,0])]
 sortedfilter = filterspectrum[np.argsort(filterspectrum[:,0])]
+sortedimecfilter1 = imecfilter1[np.argsort(imecfilter1[:, 0])]
+sortedimecfilter2 = imecfilter2[np.argsort(imecfilter2[:, 0])]
 #normalise intensities
 sortedlight[:,1] = (sortedlight[:,1]-sortedlight[:,1].min())/(sortedlight[:,1].max()-sortedlight[:,1].min())
 plt.figure("light spectrum")
@@ -91,6 +104,9 @@ plt.plot(sortedlight[:, 0], sortedlight[:, 1], label='original light spectrum')
 plt.show(block=False)
 sortedfilter[:,1] = (sortedfilter[:,1]-sortedfilter[:,1].min())/(sortedfilter[:,1].max()-sortedfilter[:,1].min())
 plt.figure("filter spectrum")
+sortedimecfilter1[:,1] = (sortedimecfilter1[:,1]-sortedimecfilter1[:,1].min())/(sortedimecfilter1[:,1].max()-sortedimecfilter1[:,1].min())
+sortedimecfilter2[:,1] = (sortedimecfilter2[:,1]-sortedimecfilter2[:,1].min())/(sortedimecfilter2[:,1].max()-sortedimecfilter2[:,1].min())
+plt.figure("imec filter spectrum")
 #plt.plot(sortedfilter[:, 0], sortedfilter[:, 1], label='original filter spectrum')
 #expand filter array to be same shape as light source spectrum 
 interpolatedfilter = np.zeros(sortedlight.shape)
@@ -100,10 +116,30 @@ end = np.array([1200, 1])
 sortedfilter = np.vstack((begin, sortedfilter, end))
 f = interp1d(sortedfilter[:, 0], sortedfilter[:, 1])
 interpolatedfilter[:, 1] = f(interpolatedfilter[:, 0])
+plt.figure("filter spectrum")
 plt.plot(interpolatedfilter[:, 0], interpolatedfilter[:, 1], label='filter spectrum')
 plt.legend(loc='best')
 plt.show(block=False)
 plt.savefig(imagepath+'Filter_Spectrum')
+#expand filter to be same shape as band response spectrum
+interpolatedimecfilter1 = np.zeros((bandresponses.shape[0], 2))
+interpolatedimecfilter1[:,0] = bandresponses[:, 0]
+#begin = np.array([0, 0])
+#end = np.array([1200, 1])
+#sortedfilter = np.vstack((begin, sortedfilter, end))
+imecf1 = interp1d(sortedimecfilter1[:, 0], sortedimecfilter1[:, 1])
+interpolatedimecfilter1[:, 1] = f(interpolatedimecfilter1[:, 0])
+interpolatedimecfilter2 = np.zeros((bandresponses.shape[0], 2))
+interpolatedimecfilter2[:,0] = bandresponses[:, 0]
+imecf2 = interp1d(sortedimecfilter2[:, 0], sortedimecfilter2[:, 1])
+interpolatedimecfilter2[:, 1] = f(interpolatedimecfilter2[:, 0])
+plt.figure("imec filter spectrum")
+plt.plot(interpolatedimecfilter1[:, 0], interpolatedimecfilter1[:, 1], label='imec longpass filter spectrum')
+plt.plot(interpolatedimecfilter2[:, 0], interpolatedimecfilter2[:, 1], label='imec shortpass filter spectrum')
+plt.legend(loc='best')
+plt.show(block=False)
+plt.savefig(imagepath+'Imec_Filter_Spectrum')
+
 #multiply light source and filter spectra
 sortedfilter = np.delete(sortedfilter, 0, 0)
 sortedfilter = np.delete(sortedfilter, -1, 0)
@@ -195,6 +231,11 @@ for file in sorted(os.listdir(datapath)):
         Rdata[:, a:a+1] = refdata
         a = a+1
 spectra = spectra[:, 0:a]
+######Multiplying bandresponses by imec filters
+if filterbandresponses == 'ON':
+    for i in range(bandresponses.shape[1]-1):
+        bandresponses[:, i+1] = np.multiply(bandresponses[:, i+1], interpolatedimecfilter1[:, 1])
+        bandresponses[:, i+1] = np.multiply(bandresponses[:, i+1], interpolatedimecfilter2[:, 1])
 ######GENERATING IDEALS
 optictransideal = np.ones((bandresponses.shape[0], 1)) #all 1 as ideally no loss of intensity
 lightideal = np.copy(wavelengths)
@@ -209,6 +250,10 @@ bandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
 Gaussbandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
 Lorentzbandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
 ApproxLorentzbandideal = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
+if secondarypeaks == 'ON':
+    Gaussbandideal2 = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
+    Lorentzbandideal2 = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
+    ApproxLorentzbandideal2 = np.zeros((bandresponses.shape[0], bandresponses.shape[1]-1))
 cmap = plt.cm.Greys
 colors = [cmap(i) for i in range(cmap.N)]
 cmap2 = plt.cm.Greens
@@ -218,17 +263,37 @@ colors3 = [cmap3(i) for i in range(cmap3.N)]
 cmap4 = plt.cm.Reds
 colors4 = [cmap4(i) for i in range(cmap4.N)]
 Paramsarray = np.zeros((bandresponses.shape[1]-1,11))
+if secondarypeaks == 'ON':
+    Paramsarray2 = np.zeros((bandresponses.shape[1]-1,11))
 for i in range(bandresponses.shape[1]-1):
     bandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
     Gaussbandideal[:, i] = approx_gaus(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
-    Lorentzbandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
-    ApproxLorentzbandideal[:, i] = approx_lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
+    Lorentzbandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
+    ApproxLorentzbandideal[:, i] = approx_lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i])
+
     Gausscontrib = np.trapz(Gaussbandideal[:, i], wavelengths)/np.trapz(bandresponses[:, i+1], wavelengths)
     Lorentzcontrib = np.trapz(Lorentzbandideal[:, i], wavelengths)/np.trapz(bandresponses[:, i+1], wavelengths)
     ApproxLorentzcontrib = np.trapz(ApproxLorentzbandideal[:, i], wavelengths)/np.trapz(bandresponses[:, i+1], wavelengths)
     Gausserr = np.sum((bandresponses[:, i+1] - Gaussbandideal[:, i])**2)
     Lorentzerr = np.sum((bandresponses[:, i+1] - Lorentzbandideal[:, i])**2)
     ApproxLorentzerr = np.sum((bandresponses[:, i+1] - ApproxLorentzbandideal[:, i])**2)
+    if secondarypeaks == 'ON':
+        Gaussbandideal2[:, i] = approx_gaus(x=wavelengths, QE=bandparameters2[2, i], fwhm=bandparameters2[1, i],
+                                            centre=bandparameters2[0, i])
+        Lorentzbandideal2[:, i] = lorentz(x=wavelengths, QE=bandparameters2[2, i], fwhm=bandparameters2[1, i],
+                                          centre=bandparameters2[0, i])
+        ApproxLorentzbandideal2[:, i] = approx_lorentz(x=wavelengths, QE=bandparameters2[2, i],
+                                                       fwhm=bandparameters2[1, i],
+                                                       centre=bandparameters2[0, i])
+        Gausscontrib2 = np.trapz(Gaussbandideal2[:, i], wavelengths) / np.trapz(bandresponses[:, i + 1], wavelengths)
+        Lorentzcontrib2 = np.trapz(Lorentzbandideal2[:, i], wavelengths) / np.trapz(bandresponses[:, i + 1],
+                                                                                    wavelengths)
+        ApproxLorentzcontrib2 = np.trapz(ApproxLorentzbandideal2[:, i], wavelengths) / np.trapz(bandresponses[:, i + 1],
+                                                                                                wavelengths)
+        Gausserr2 = np.sum((bandresponses[:, i + 1] - Gaussbandideal2[:, i]) ** 2)
+        Lorentzerr2 = np.sum((bandresponses[:, i + 1] - Lorentzbandideal2[:, i]) ** 2)
+        ApproxLorentzerr2 = np.sum((bandresponses[:, i + 1] - ApproxLorentzbandideal2[:, i]) ** 2)
+
     #Paramsarray[i, 0] = bandparameters[0, i]
     #Paramsarray[i, 1] = bandparameters[1, i]
     #Paramsarray[i, 2] = bandparameters[2, i]
@@ -241,32 +306,63 @@ for i in range(bandresponses.shape[1]-1):
     Paramsarray[i, 7] = Lorentzerr
     Paramsarray[i, 10] = ApproxLorentzcontrib
     Paramsarray[i, 9] = ApproxLorentzerr
+    if secondarypeaks == 'ON':
+        Paramsarray2[i, 0:5] = bandparameters2[0:5, i]
+        Paramsarray2[i, 6] = Gausscontrib2
+        Paramsarray2[i, 5] = Gausserr2
+        Paramsarray2[i, 8] = Lorentzcontrib2
+        Paramsarray2[i, 7] = Lorentzerr2
+        Paramsarray2[i, 10] = ApproxLorentzcontrib2
+        Paramsarray2[i, 9] = ApproxLorentzerr2
+
+        Gausssum = Gaussbandideal[:, i] + Gaussbandideal2[:, i]
+        Lorentzsum = Lorentzbandideal[:, i] + Lorentzbandideal2[:, i]
+        ApproxLorentzsum = ApproxLorentzbandideal[:, i] + ApproxLorentzbandideal2[:, i]
+
     plt.figure('Gaussian band responses')
     plt.plot(wavelengths, bandresponses[:, i+1], color=colors[-i*7],  label='real')
-    plt.plot(wavelengths, Gaussbandideal[:, i], color = colors2[-i*7], label ="Gaussian ideal")
+    if secondarypeaks == 'ON':
+        plt.plot(wavelengths, Gausssum, color=colors2[-i * 7], label="Gaussian ideal")
+    else:
+        plt.plot(wavelengths, Gaussbandideal[:, i], color = colors2[-i*7], label ="Gaussian ideal")
     if i ==0:
         plt.legend(loc='best')
     #plt.show(block=False)
     plt.savefig(imagepath+'Gaussian_band_responses')
     plt.figure('Lorentzian band responses')
     plt.plot(wavelengths, bandresponses[:, i + 1], color=colors[-i * 7], label='real')
-    plt.plot(wavelengths, Lorentzbandideal[:, i], color=colors3[-i * 7], label="Lorentzian ideal")
+    if secondarypeaks == 'ON':
+        plt.plot(wavelengths, Lorentzsum, color=colors3[-i * 7], label="Lorentzian ideal")
+    else:
+        plt.plot(wavelengths, Lorentzbandideal[:, i], color=colors3[-i * 7], label="Lorentzian ideal")
     if i ==0:
         plt.legend(loc='best')
     #plt.show(block=False)
     plt.savefig(imagepath+'Lorentzian_band_responses')
     plt.figure('Approximate Lorentzian band responses')
     plt.plot(wavelengths, bandresponses[:, i + 1], color=colors[-i * 7], label='real')
-    plt.plot(wavelengths, ApproxLorentzbandideal[:, i], color=colors4[-i * 7], label="Approximate Lorentzian ideal")
+    if secondarypeaks == 'ON':
+        plt.plot(wavelengths, ApproxLorentzsum, color=colors4[-i * 7], label="Approximate Lorentzian ideal")
+    else:
+        plt.plot(wavelengths, ApproxLorentzbandideal[:, i], color=colors4[-i * 7], label="Approximate Lorentzian ideal")
+    #plt.plot(wavelengths, ApproxLorentzbandideal2[:, i], color=colors4[-i * 7])
+    #plt.plot(wavelengths, ApproxLorentzsum, color=colors4[-i * 7], label="Approximate Lorentzian ideal")
     if i ==0:
         plt.legend(loc='best')
     #plt.show(block=False)
     plt.savefig(imagepath+'Approximate_Lorentzian_band_responses')
     plt.figure(str(i+1)+'th_band_response')
-    plt.plot(wavelengths, bandresponses[:, i + 1], color=colors[-i * 7], label='real')
+    plt.plot(wavelengths, bandresponses[:, i + 1], color='black', label='real')
     plt.plot(wavelengths, Gaussbandideal[:, i], color='green', label="Gaussian ideal")
-    plt.plot(wavelengths, Lorentzbandideal[:, i], color='red', label="Lorentzian ideal")
+    plt.plot(wavelengths, Lorentzbandideal[:, i], color='maroon', label="Lorentzian ideal")
     plt.plot(wavelengths, ApproxLorentzbandideal[:, i], color='blue', label="Approximate Lorentzian ideal")
+    if secondarypeaks == 'ON':
+        plt.plot(wavelengths, Gaussbandideal2[:, i], color='palegreen', label='Gaussian ideal secondary peak')
+        plt.plot(wavelengths, Lorentzbandideal2[:, i], color='salmon', label='Lorentzian ideal secondary peak')
+        plt.plot(wavelengths, ApproxLorentzbandideal2[:, i], color='lightsteelblue', label='Approx Lorentzian ideal secondary peak')
+        plt.plot(wavelengths, Gausssum, color='mediumseagreen', label='Gaussian ideal sum')
+        plt.plot(wavelengths, Lorentzsum, color='red', label='Lorentzian ideal sum')
+        plt.plot(wavelengths, ApproxLorentzsum, color='royalblue',label='Approx Lorentzian ideal sum')
     plt.legend(loc='best')
     #plt.show(block=False)
     plt.savefig(imagepath + str(i+1)+'th_band_response')
@@ -349,4 +445,8 @@ Array2 = Array2.drop([20,21])
 Array2.to_csv(newpath+newxname+'.csv', index=False)
 ParamsArray = pd.DataFrame(Paramsarray)
 ParamsArray.columns = ['central wavelength', 'FWHM', 'QE', 'imec fit error', 'imec contribution', 'Gaussian fit error', 'Gaussian contribution', 'Lorentzian fit error', 'Lorentzian contribution', 'Approx Lorentzian fit error', 'Approx Lorentzian contribution']
-ParamsArray.to_csv(newpath+'Ideal_band_responses.csv', index=False)
+ParamsArray.to_csv(imagepath+'Ideal_band_responses.csv', index=False)
+if secondarypeaks == 'ON':
+    ParamsArray2 = pd.DataFrame(Paramsarray2)
+    ParamsArray2.columns = ['central wavelength', 'FWHM', 'QE', 'imec fit error', 'imec contribution', 'Gaussian fit error', 'Gaussian contribution', 'Lorentzian fit error', 'Lorentzian contribution', 'Approx Lorentzian fit error', 'Approx Lorentzian contribution']
+    ParamsArray2.to_csv(imagepath+'Ideal_band_responses_second_peak.csv', index=False)
