@@ -3,16 +3,16 @@ import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
 ##########INPUTS
-v1path = '/home/ab20/Data/Pichette/v1/onV2/' #change last section for which dataset plotting
-v2path = '/home/ab20/Data/Pichette/v2/onV2/'
-halfv1path = '/home/ab20/Data/Pichette/halfv2/onv2/'
-paper = '/home/ab20/Data/Pichette/outofbox/onv2/'
-nocalpath = '/home/ab20/Data/Pichette/nocalibration/onV2/'
+v1path = '/home/ab20/Data/Pichette/v1/onV1/' #change last section for which dataset plotting
+v2path = '/home/ab20/Data/Pichette/v2/onV1/'
+halfv1path = '/home/ab20/Data/Pichette/halfv1/onV1/'
+paper = '/home/ab20/Data/Pichette/outofbox/onv1/'
+nocalpath = '/home/ab20/Data/Pichette/nocalibration/onV1/'
 calibrationpath = '/home/ab20/Data/Calibration_file/'
 bandwavelengths = 'fullxaxis'
 bandwavelengths3 = 'fullxaxis25'
 paperwavelengths = 'bandwavelengths'
-newlocation = '/home/ab20/Data/Pichette/collectivev2/'
+newlocation = '/home/ab20/Data/Pichette/collectivev1/'
 spectrometer = 'spydercheckr_spectra_spectrometer'
 ##########IMPORT
 v1data = genfromtxt(v1path + 'data.csv', delimiter = ',')

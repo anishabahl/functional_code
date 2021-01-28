@@ -39,7 +39,7 @@ newname = 'Pichettematrix'
 newxname = 'fullxaxis'
 newpath = '/home/ab20/Data/Calibration_file/'
 imagepath = '/home/ab20/Data/Pichette/bideal/Lorentzian/secondary_imecfilter/' #path to save new images
-prereorder = 'OFF' #should be on for PF at the moment
+prereorder = 'OFF' #should be off for PF at the moment
 idealmethod = 'Lorentzian' #Lorentzian or Gaussian or ApproxLorentzian
 compareGauss = 'OFF'
 compareApproxLorentz = 'OFF'
@@ -49,7 +49,7 @@ optRmethod = 'SLSQP' #options are scipy minimise 'SLSQP' and 'least_sq'
 alpha = 0.05 #bounds values in R matrix
 filterbandresponses = 'ON' #uses imec filters on measured band responses
 secondarypeaks = 'ON' #fits and plots secondary peaks
-errmethods = ['RSS', 'MSE', 'RMSE', 'AAE', 'MAE', 'Max AE'] #number of methods of error calculation
+errmethods = ['MSEL', 'RMSEL', 'MSEM', 'RMSEM'] #number of methods of error calculation
 ######DEFINE FUNCTIONS
 def approx_gaus(x, QE, fwhm, centre):
     sigma = 0.5*fwhm/np.sqrt(np.log(2))
@@ -306,12 +306,13 @@ for i in range(bandresponses.shape[1]-1):
     Lorentzcontrib = np.trapz(Lorentzbandideal[:, i], wavelengths)/np.trapz(bandresponses[:, i+1], wavelengths)
     LorentzRSSerr = np.sum((bandresponses[:, i+1] - Lorentzbandideal[:, i])**2)
     #LorentzMSEerr = LorentzRSSerr / (bandresponses.shape[0])
-    LorentzMSEerr = LorentzRSSerr / np.trapz(Lorentzbandideal[:, i], wavelengths)
-    LorentzRMSEerr = math.sqrt(LorentzMSEerr)
-    LorentzAAE = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal[:, i]))
-    LorentzMAE = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal[:, i])) / (
-    bandresponses.shape[0])
-    LorentzmaxAE = np.amax(abs(bandresponses[:, i + 1] - Lorentzbandideal[:, i]))
+    LorentzMSEL = LorentzRSSerr / np.trapz(Lorentzbandideal[:, i], wavelengths)
+    LorentzRMSEL = math.sqrt(LorentzMSEL)
+    LorentzMSEM = LorentzRSSerr / np.trapz(bandresponses[:, i+1], wavelengths)
+    LorentzRMSEM = math.sqrt(LorentzMSEM)
+    #LorentzAAE = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal[:, i]))
+    #LorentzMAE = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal[:, i])) / (bandresponses.shape[0])
+    #LorentzmaxAE = np.amax(abs(bandresponses[:, i + 1] - Lorentzbandideal[:, i]))
     if secondarypeaks == 'ON':
         if compareGauss == 'ON':
             Gaussbandideal2[:, i] = approx_gaus(x=wavelengths, QE=bandparameters2[2, i], fwhm=bandparameters2[1, i],
@@ -342,12 +343,16 @@ for i in range(bandresponses.shape[1]-1):
         Lorentzcontrib2 = np.trapz(Lorentzbandideal2[:, i], wavelengths) / np.trapz(bandresponses[:, i + 1],
                                                                                     wavelengths)
         LorentzRSSerr2 = np.sum((bandresponses[:, i + 1] - Lorentzbandideal2[:, i]) ** 2)
-        LorentzMSEerr2 = LorentzRSSerr2 / (bandresponses.shape[0])
-        LorentzRMSEerr2 = math.sqrt(LorentzMSEerr2)
-        LorentzMAE2 = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal2[:, i])) / (
-            bandresponses.shape[0])
-        LorentzAAE2 = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal2[:, i]))
-        LorentzmaxAE2 = np.amax(abs(bandresponses[:, i + 1] - Lorentzbandideal2[:, i]))
+        LorentzMSEL2 = LorentzRSSerr2 / np.trapz(Lorentzbandideal2[:, i], wavelengths)
+        LorentzRMSEL2 = math.sqrt(LorentzMSEL2)
+        LorentzMSEM2 = LorentzRSSerr2 / np.trapz(bandresponses[:, i+1], wavelengths)
+        LorentzRMSEM2 = math.sqrt(LorentzMSEM2)
+        #LorentzMSEerr2 = LorentzRSSerr2 / (bandresponses.shape[0])
+        #LorentzMSEerr2 = LorentzRSSerr2 / np.trapz(Lorentzbandideal2[:, i], wavelengths)
+        #LorentzRMSEerr2 = math.sqrt(LorentzMSEerr2)
+        #LorentzMAE2 = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal2[:, i])) / (bandresponses.shape[0])
+        #LorentzAAE2 = np.sum(abs(bandresponses[:, i + 1] - Lorentzbandideal2[:, i]))
+        #LorentzmaxAE2 = np.amax(abs(bandresponses[:, i + 1] - Lorentzbandideal2[:, i]))
 
 
     #Paramsarray[i, 0] = bandparameters[0, i]
@@ -357,12 +362,12 @@ for i in range(bandresponses.shape[1]-1):
     #Paramsarray[i, 4] = bandparameters[4, i]
     Paramsarray[i, 0:5] = bandparameters[0:5, i]
     Paramsarray[i, 5] = Lorentzcontrib
-    Paramsarray[i, 5+errmethods.index('RSS')+1] = LorentzRSSerr
-    Paramsarray[i, 5 + errmethods.index('MSE') + 1] = LorentzMSEerr
-    Paramsarray[i, 5 + errmethods.index('RMSE') + 1] = LorentzRMSEerr
-    Paramsarray[i, 5 + errmethods.index('AAE') + 1] = LorentzAAE
-    Paramsarray[i, 5 + errmethods.index('MAE') + 1] = LorentzMAE
-    Paramsarray[i, 5 + errmethods.index('Max AE') + 1] = LorentzmaxAE
+    Paramsarray[i, 5+errmethods.index('MSEL')+1] = LorentzMSEL
+    Paramsarray[i, 5 + errmethods.index('RMSEL') + 1] = LorentzRMSEL
+    Paramsarray[i, 5 + errmethods.index('MSEM') + 1] = LorentzMSEM
+    Paramsarray[i, 5 + errmethods.index('RMSEM') + 1] = LorentzRMSEM
+    #Paramsarray[i, 5 + errmethods.index('MAE') + 1] = LorentzMAE
+    #Paramsarray[i, 5 + errmethods.index('Max AE') + 1] = LorentzmaxAE
     if compareGauss == 'ON' and compareApproxLorentz == 'ON':
         Paramsarray[i, 6+len(errmethods)] = Gausscontrib
         Paramsarray[i, 6+len(errmethods)+errmethods.index('RSS')+1] = GaussRSSerr
@@ -398,12 +403,12 @@ for i in range(bandresponses.shape[1]-1):
     if secondarypeaks == 'ON':
         Paramsarray2[i, 0:5] = bandparameters2[0:5, i]
         Paramsarray2[i, 5] = Lorentzcontrib2
-        Paramsarray2[i, 5 + errmethods.index('RSS')+1] = LorentzRSSerr2
-        Paramsarray2[i, 5 + errmethods.index('MSE') + 1] = LorentzMSEerr2
-        Paramsarray2[i, 5 + errmethods.index('RMSE') + 1] = LorentzRMSEerr2
-        Paramsarray2[i, 5 + errmethods.index('AAE') + 1] = LorentzAAE2
-        Paramsarray2[i, 5 + errmethods.index('MAE') + 1] = LorentzMAE2
-        Paramsarray2[i, 5 + errmethods.index('Max AE') + 1] = LorentzmaxAE2
+        Paramsarray2[i, 5 + errmethods.index('MSEL')+1] = LorentzMSEL2
+        Paramsarray2[i, 5 + errmethods.index('RMSEL') + 1] = LorentzRMSEL2
+        Paramsarray2[i, 5 + errmethods.index('MSEM') + 1] = LorentzMSEM2
+        Paramsarray2[i, 5 + errmethods.index('RMSEM') + 1] = LorentzRMSEM2
+        #Paramsarray2[i, 5 + errmethods.index('MAE') + 1] = LorentzMAE2
+        #Paramsarray2[i, 5 + errmethods.index('Max AE') + 1] = LorentzmaxAE2
         if compareGauss == 'ON' and compareApproxLorentz == 'ON':
             Paramsarray2[i, 6 + len(errmethods)] = Gausscontrib2
             Paramsarray2[i, 6 + len(errmethods) + errmethods.index('RSS')+1] = GaussRSSerr2

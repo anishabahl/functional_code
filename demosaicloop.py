@@ -95,9 +95,37 @@ for file in os.listdir(data):
                 Hypercube = np.delete(Hypercube, np.s_[-5:], 0)
                 Hypercube = np.delete(Hypercube, np.s_[0:5], 1)
                 Hypercube = np.delete(Hypercube, np.s_[-5:], 1)
+
+            #reorder
+                Data = np.zeros((Hypercube.shape))
+                Data[:, :, 0] = Hypercube[:, :, 20]
+                Data[:, :, 1] = Hypercube[:, :, 21]
+                Data[:, :, 2] = Hypercube[:, :, 22]
+                Data[:, :, 3] = Hypercube[:, :, 23]
+                Data[:, :, 4] = Hypercube[:, :, 24]
+                Data[:, :, 5] = Hypercube[:, :, 15]
+                Data[:, :, 6] = Hypercube[:, :, 16]
+                Data[:, :, 7] = Hypercube[:, :, 17]
+                Data[:, :, 8] = Hypercube[:, :, 18]
+                Data[:, :, 9] = Hypercube[:, :, 19]
+                Data[:, :, 10] = Hypercube[:, :, 10]
+                Data[:, :, 11] = Hypercube[:, :, 11]
+                Data[:, :, 12] = Hypercube[:, :, 12]
+                Data[:, :, 13] = Hypercube[:, :, 13]
+                Data[:, :, 14] = Hypercube[:, :, 14]
+                Data[:, :, 15] = Hypercube[:, :, 5]
+                Data[:, :, 16] = Hypercube[:, :, 6]
+                Data[:, :, 17] = Hypercube[:, :, 7]
+                Data[:, :, 18] = Hypercube[:, :, 8]
+                Data[:, :, 19] = Hypercube[:, :, 9]
+                Data[:, :, 20] = Hypercube[:, :, 4]
+                Data[:, :, 21] = Hypercube[:, :, 0]
+                Data[:, :, 22] = Hypercube[:, :, 1]
+                Data[:, :, 23] = Hypercube[:, :, 2]
+                Data[:, :, 24] = Hypercube[:, :, 3]
                 #Test by visualising pseudo-RGB image
 ##                view2 = imshow(Hypercube, bands = (1,11,23)) #Does not appear quite as expected not sure why
                 #############SAVE DATA
-                img = envi.save_image(newlocation+newfilename+'.hdr', Hypercube, shape = Hypercube.shape, dtype=np.float32, force=True)
+                img = envi.save_image(newlocation+newfilename+'.hdr', Data, shape = Data.shape, dtype=np.float32, force=True)
 
 
