@@ -26,22 +26,24 @@ import leastsqbound
 ######INPUTS
 bands = 'bandresponses.csv'
 path = '/home/ab20/Data/Calibration_file/'
-band_parameters = 'idealbandparameters.csv' 
+band_parameters = 'idealbandparameters.csv'
 lightspectrum = 'IR light with LP UV filter thorugh exoscope and adaptor.txt'
 filterdata = 'AsahiSpectra_XVL0670.csv'
 spectrometer = 'spydercheckr_spectra_spectrometer'
-datapath = '/home/ab20/Data/System_Paper/Photonfocus/halfv1demosaiced/' #must have full hypercube data
+datapath = '/home/ab20/Data/System_Paper/Photonfocus/v2demosaiced/' #must have full hypercube data
 filetype = '.img'
-newname = 'Pichettematrix'
+newname = 'LightNotFilteredTheirsV2'
 newxname = 'fullxaxis'
 newpath = '/home/ab20/Data/Calibration_file/'
-imagepath = '/home/ab20/Data/Pichette/halfv1/' #path to save new images
-prereorder = 'ON' #should be on for PF at the moment
+imagepath = '/home/ab20/Data/Pichette/20210210/LightNotFiltered/TheirFit/WithV2/' #path to save new images
+prereorder = 'OFF' #should be on for PF at the moment
 idealmethod = 'Lorentzian' #Lorentzian or Gaussian or ApproxLorentzian
 lam = 0.005 #parameter for regularisation
 optCmethod = 'lsmr' #options are scikit 'Ridge' and 'lsmr'
 optRmethod = 'SLSQP' #options are scipy minimise 'SLSQP' and 'least_sq'
 alpha = 0.05 #bounds values in R matrix
+filterbands = 'ON'
+filterlight = 'OFF'
 ######DEFINE FUNCTIONS
 def approx_gaus(x, QE, fwhm, centre):
     sigma = 0.5*fwhm/np.sqrt(np.log(2))
@@ -100,7 +102,15 @@ end = np.array([1200, 1])
 sortedfilter = np.vstack((begin, sortedfilter, end))
 f = interp1d(sortedfilter[:, 0], sortedfilter[:, 1])
 interpolatedfilter[:, 1] = f(interpolatedfilter[:, 0])
+interpolatedfilter2 = np.zeros((bandresponses.shape[0], 2))
+interpolatedfilter2[:,0] = bandresponses[:, 0]
+b1 = np.array([399.998, 0])
+e1 = np.array([1000.0, 1])
+sortedfilter2 = np.vstack((b1, sortedfilter, e1))
+f1 = interp1d(sortedfilter2[:, 0], sortedfilter2[:, 1])
+interpolatedfilter2[:, 1] = f1(interpolatedfilter2[:, 0])
 plt.plot(interpolatedfilter[:, 0], interpolatedfilter[:, 1], label='filter spectrum')
+plt.plot(interpolatedfilter2[:, 0], interpolatedfilter2[:, 1], label='filter spectrum interpolated differently')
 plt.legend(loc='best')
 plt.show(block=False)
 plt.savefig(imagepath+'Filter_Spectrum')
@@ -109,7 +119,10 @@ sortedfilter = np.delete(sortedfilter, 0, 0)
 sortedfilter = np.delete(sortedfilter, -1, 0)
 correctedlight = np.zeros(sortedlight.shape)
 correctedlight[:,0] = sortedlight[:, 0]
-correctedlight[:, 1] = np.multiply(sortedlight[:, 1], interpolatedfilter[:,1])
+if filterlight == 'ON':
+    correctedlight[:, 1] = np.multiply(sortedlight[:, 1], interpolatedfilter[:,1])
+else:
+    correctedlight[:, 1] = sortedlight[:, 1]
 plt.figure('light spectrum')
 #plt.plot(correctedlight[:, 0], correctedlight[:, 1], label='multiplied by filter')
 #create less resolved light spectrum to match wavelength axis of all other data
@@ -121,6 +134,14 @@ plt.plot(smalllight[:,0], smalllight[:,1], label='multiplied by filter')
 plt.legend(loc = 'best')
 plt.show(block = False)
 plt.savefig(imagepath+'Light_Spectrum')
+# multiplying band responses by filter
+#filteredbandresponses = np.zeros(bandresponses.shape)
+#filteredbandresponses[:, 0] = bandresponses[:, 0]
+if filterbands == 'ON':
+    i = 0
+    for i in range(bandresponses.shape[1] - 1):
+        bandresponses[:, i + 1] = np.multiply(bandresponses[:, i + 1], interpolatedfilter2[:, 1])
+        i+=1
 ######Creating optical transmission but should measure?
 optictrans = np.ones((bandresponses.shape[0], 1)) 
 noise = np.random.normal(0, 0.5, optictrans.shape)
@@ -216,7 +237,7 @@ for i in range(bandresponses.shape[1]-1):
         bandideal[:, i] = lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
     if idealmethod == 'ApproxLorentzian':
         bandideal[:, i] = approx_lorentz(x=wavelengths, QE=bandparameters[2, i], fwhm=bandparameters[1, i], centre=bandparameters[0, i]) 
-    plt.plot(wavelengths, bandresponses[:, i+1], color=colors[-i*7],  label='real')
+    plt.plot(wavelengths, bandresponses[:, i+1], color=colors[-i*7],  label='filtered measured')
     plt.plot(wavelengths, bandideal[:, i], color = colors2[-i*7], label = 'ideal')
     if i ==0:
         plt.legend(loc='best')
@@ -293,9 +314,9 @@ ax3.title.set_text('C+R')
 ax3.imshow(CR, cmap='Purples')
 figCR.show()
 name = 'C+R_lambda=' + str(lam) + '_alpha=' + str(alpha)+'_halfv1'
-figCR.savefig(str(imagepath)+name+'.png')
+figCR.savefig(str(imagepath)+newname+'.png')
 Array = pd.DataFrame(CR)
-Array.to_csv(newpath+name+'.csv', index=False)
+Array.to_csv(newpath+newname+'.csv', index=False)
 Array2 = pd.DataFrame(bandparameters[0, :])
 Array2 = Array2.drop([20,21])
 Array2.to_csv(newpath+newxname+'.csv', index=False)
