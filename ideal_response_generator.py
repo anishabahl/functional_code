@@ -31,6 +31,7 @@ filterdata = 'AsahiSpectra_XVL0670.csv' #filter spectrum
 band_parameters = 'idealbandparameters.csv' #imec parameters imported for initial guess
 newlocation = '/home/ab20/Data/Calibration_file/' #location of new file
 newname = 'fittedparameters.csv'
+imagepath = '/home/ab20/Data/Pichette/20210210/ideal_band_fitting/'
 ######DEFINE FUNCTIONS
 def lorentz(x, QE, fwhm, centre):
     p = math.sqrt(4*centre**2 + fwhm**2) - 2*centre
@@ -59,6 +60,7 @@ plt.figure("filter spectrum")
 plt.plot(interpolatedfilter[:, 0], interpolatedfilter[:, 1], label='filter spectrum')
 plt.legend(loc='best')
 plt.show(block=False)
+plt.savefig(imagepath + 'filter spectrum')
 plt.figure("band responses")
 filteredbandresponses = np.zeros(bandresponses.shape)
 filteredbandresponses[:, 0] = bandresponses[:, 0]
@@ -68,26 +70,42 @@ for i in range(bandresponses.shape[1] - 1):
     plt.plot(bandresponses[:, 0], bandresponses[:, i+1], label='band responses', color='black')
     plt.plot(filteredbandresponses[:, 0], filteredbandresponses[:, i+1], label='filtered band responses', color='red')
     i+=1
+    if i == 0:
+        plt.legend(loc='best')
+plt.show(block=False)
+plt.savefig(imagepath + 'filtered measured band responses')
 ######FIT LORENTZIAN FUNCTIONS
 j = 0
 plt.figure('Fitted response')
 fittedparameters = np.zeros(bandparameters.shape)
-for j in range(bandresponses.shape[1] - 1):
+for j in range(filteredbandresponses.shape[1] - 1):
     guess = (bandparameters[2, j], bandparameters[1, j], bandparameters[0, j])
     popt, pcov = curve_fit(lorentz, filteredbandresponses[:, 0], filteredbandresponses[:, j+1], p0=guess, bounds=((0,0,400), (1, 1000, 1000)))
+    ###error and contrib - need to confirm with imec
+    RSSerr = np.sum((filteredbandresponses[:, j + 1] - lorentz(filteredbandresponses[:, 0], *popt)) ** 2)
+    MSEM = RSSerr / np.trapz(filteredbandresponses[:, j + 1], filteredbandresponses[:, 0])
+    contrib = lorentz(filteredbandresponses[:, 0], *popt).sum(axis=0)/ filteredbandresponses.sum(axis=0)[j + 1]
     fittedparameters[2, j] = popt[0]
     fittedparameters[1, j] = popt[1]
     fittedparameters[0, j] = popt[2]
-    ###need to get errors and contributions
+    fittedparameters[3, j] = MSEM
+    fittedparameters[4, j] = contrib
     plt.figure('Fitted response')
     plt.plot(filteredbandresponses[:, 0], filteredbandresponses[:, j+1], color = 'red')
     plt.plot(filteredbandresponses[:, 0], lorentz(filteredbandresponses[:, 0], *popt), color='blue')
+    plt.plot(filteredbandresponses[:, 0], lorentz(x=filteredbandresponses[:, 0], QE=guess[0], fwhm=guess[1], centre=guess[2]), color='green')
+
     plt.figure(str(j) + 'th band response')
-    plt.plot(filteredbandresponses[:, 0], filteredbandresponses[:, j + 1], color='red')
-    plt.plot(filteredbandresponses[:, 0], lorentz(filteredbandresponses[:, 0], *popt), color='blue')
+    plt.plot(filteredbandresponses[:, 0], filteredbandresponses[:, j + 1], color='red', label = 'filtered measured response')
+    plt.plot(filteredbandresponses[:, 0], lorentz(filteredbandresponses[:, 0], *popt), color='blue', label = 'our fitted response')
+    plt.plot(filteredbandresponses[:, 0], lorentz(x=filteredbandresponses[:, 0], QE=guess[0], fwhm=guess[1], centre=guess[2]), color = 'green', label = 'imec fitted response')
+    plt.legend(loc='best')
     plt.show(block=False)
+    plt.savefig(imagepath + str(j + 1) + 'th_band_response')
     j += 1
+plt.figure('Fitted response')
 plt.show(block=False)
+plt.savefig(imagepath + 'Collective responses')
 ######EXPORT PARAMETERS
 Array = pd.DataFrame(fittedparameters)
 Array.to_csv(newlocation+newname, index=False)
