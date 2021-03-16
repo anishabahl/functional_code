@@ -3,18 +3,24 @@ import cv2
 import rawpy as raw
 import imageio
 import numpy as np
+from numpy import genfromtxt
 import matplotlib.pyplot as plt
 import spectral
 from spectral import imshow
 from spectral import envi
 import xml.etree.ElementTree as ET
 #######INPUTS
-data = '/home/ab20/Data/System_Paper/Photonfocus/raw_data/' #path to data
+data = '/home/ab20/Data/Kuka/2021_03_15/NIR/v9/' #path to data
 filetype = '.png'
 whitename = 'ref_white' #white reference image name
 darkname = 'ref_dark' #dark reference image name
-newlocation = '/home/ab20/Data/System_Paper/Photonfocus/demosaiced/' #name of new location to put new files (must already exist)
-for file in os.listdir(data):
+newlocation = '/home/ab20/Data/Kuka/2021_03_15/NIR/v9_demosaiced/' #name of new location to put new files (must already exist)
+x = '/home/ab20/Data/Calibration_file/fullxaxis25.csv' #all wavelengths
+
+wavelengths = genfromtxt(x, delimiter=',')
+wavelengths = np.delete(wavelengths, 0,0)
+wavelengths = wavelengths.reshape(wavelengths.shape[0],1)
+for file in sorted(os.listdir(data)):
     if file.endswith(filetype):
         if not file.endswith('label'+filetype):
             if str(file[:-4]) != whitename and str(file[:-4]) != darkname:
@@ -126,6 +132,11 @@ for file in os.listdir(data):
                 #Test by visualising pseudo-RGB image
 ##                view2 = imshow(Hypercube, bands = (1,11,23)) #Does not appear quite as expected not sure why
                 #############SAVE DATA
-                img = envi.save_image(newlocation+newfilename+'.hdr', Data, shape = Data.shape, dtype=np.float32, force=True)
+                metadata = {}
+                metadata["wavelengths"] = wavelengths
+                metadata["bands"] = 25
+                metadata["height"] = 1088
+                metadata["width"] = 2048
+                img = envi.save_image(newlocation+newfilename+'.hdr', Data, shape = Data.shape, dtype=np.float32, force=True, metadata=metadata)
 
 
