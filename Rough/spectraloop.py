@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 import spectral.io.aviris as aviris
 import h5py
 #######INPUTS
-#currently for photonfocus: filetype = .img, calibratedata = on, prereorder = on, separatexaxis = on
+#currently for photonfocus: filetype = .img, calibratedata = on, separatexaxis = on
 #imec is opposite
 datapath = '/home/ab20/Data/System_Paper/Photonfocus/v2demosaiced/' #path to data
 filetype = '.img' #.img or .raw
@@ -21,8 +21,8 @@ camera = 'photonfocus'
 calibrationpath = '/home/ab20/Data/Calibration_file/' #only necessary for calibration and spectrometer data so if turned off does not matter
 calibratedata = 'ON' #currently should always be off for imec
 prereorder = 'OFF' #Put on if necessary to reorder hypercube prior to calibration
-calibrationfile = 'calibrationmatrix' #name of calibration csv file
-newlocation = '/home/ab20/Data/Pichette/outofbox/onv2/' #name of new location to put new files (must already exist)
+calibrationfile = 'LightNotFilteredTheirsV2' #name of calibration csv file
+newlocation = '/home/ab20/Data/Pichette/20210210/LightNotFiltered/TheirFit/WithV2/onV2/' #name of new location to put new files (must already exist)
 Spectra = 'ON' #'ON' if want to plot spectra similar to system paper
 plottype = 'collective' #options are individual or collective
 spectrometer = 'spydercheckr_spectra_spectrometer' #file with spectrometer data from checkerboard
@@ -30,7 +30,7 @@ plotcomparison = 'OFF' #if want to plot previous data from .h5 file
 comparepath = '/home/ab20/Data/analysis/' #path to existing photonfocus and imec data for comparison
 comparedata = 'checkerboard_photonfocus_v1.h5' #file with existing photonfocus or imec data for comparison
 separatexaxis = 'ON' #on for photonfocus off for imec at the moment
-bandwavelengths = 'bandwavelengths' #file with xaxis if separate
+bandwavelengths = 'fullxaxis' #file with xaxis if separate
 #######list to identify correct tile data in spectrometer and .h5 files
 tiles = ['0', '1A', '2A', '3A', '4A', '5A', '6A', '1B', '2B', '3B', '4B', '5B', '6B', '1C', '2C', '3C', '4C', '5C', '6C', '1D', '2D', '3D', '4D', '5D', '6D', '1E', '2E', '3E', '4E', '5E', '6E', '1F', '2F', '3F', '4F', '5F', '6F', '1G', '2G', '3G', '4G', '5G', '6G', '1H', '2H', '3H', '4H', '5H', '6H']
 tilearray = np.array([['1A', '2A', '3A', '4A', '5A', '6A'], ['1B', '2B', '3B', '4B', '5B', '6B'], ['1C', '2C', '3C', '4C', '5C', '6C'], ['1D', '2D', '3D', '4D', '5D', '6D'], ['1E', '2E', '3E', '4E', '5E', '6E'], ['1F', '2F', '3F', '4F', '5F', '6F'], ['1G', '2G', '3G', '4G', '5G', '6G'], ['1H', '2H', '3H', '4H', '5H', '6H']])

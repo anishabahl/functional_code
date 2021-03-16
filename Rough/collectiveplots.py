@@ -3,16 +3,16 @@ import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
 ##########INPUTS
-v1path = '/home/ab20/Data/Pichette/v1/onV1/' #change last section for which dataset plotting
-v2path = '/home/ab20/Data/Pichette/v2/onV1/'
-halfv1path = '/home/ab20/Data/Pichette/halfv1/onV1/'
-paper = '/home/ab20/Data/Pichette/outofbox/onv1/'
-nocalpath = '/home/ab20/Data/Pichette/nocalibration/onV1/'
+v1path = '/home/ab20/Data/Pichette/20210210/BandsNotFilteredForMatrix/OurFit/WithV1/onV2/' #change last section for which dataset plotting
+v2path = '/home/ab20/Data/Pichette/20210210/BandsNotFilteredForMatrix/OurFit/WithV2/onV2/'
+halfv1path = '/home/ab20/Data/Pichette/20210210/BandsNotFilteredForMatrix/TheirFit/WithV1/onV2/'
+paper = '/home/ab20/Data/Pichette/20210210/BandsNotFilteredForMatrix/TheirFit/WithV2/onV2/'
+nocalpath = '/home/ab20/Data/Pichette/20210210/BandsFilteredForMatrix/TheirFit/TheirMatrix/onV2/'
 calibrationpath = '/home/ab20/Data/Calibration_file/'
 bandwavelengths = 'fullxaxis'
-bandwavelengths3 = 'fullxaxis25'
-paperwavelengths = 'bandwavelengths'
-newlocation = '/home/ab20/Data/Pichette/collectivev1/'
+bandwavelengths3 = 'bandwavelengths'
+paperwavelengths = 'fullxaxis'
+newlocation = '/home/ab20/Data/Pichette/20210210/BandsNotFilteredForMatrix/'
 spectrometer = 'spydercheckr_spectra_spectrometer'
 ##########IMPORT
 v1data = genfromtxt(v1path + 'data.csv', delimiter = ',')
@@ -60,12 +60,12 @@ for i in range(v1data.shape[1]):
     paperspec = paperspec[np.argsort(paperspec[:,0])]
     coordindices = np.where(tilearray == tile)
     coord = list(zip(coordindices[0], coordindices[1]))[0]
-    axs[coord[0], coord[1]].plot(paperspec[:, 0], paperspec[:, 1], label='using premade matrix')
-    axs[coord[0], coord[1]].plot(v1spec[:, 0], v1spec[:, 1], label='fitted on v1')
-    axs[coord[0], coord[1]].plot(v2spec[:, 0], v2spec[:, 1], label='fitted on v2')
-    axs[coord[0], coord[1]].plot(halfv1spec[:, 0], halfv1spec[:, 1], label='fitted on half v2')
+    axs[coord[0], coord[1]].plot(paperspec[:, 0], paperspec[:, 1], label='Their parameters refined with v2')
+    axs[coord[0], coord[1]].plot(v1spec[:, 0], v1spec[:, 1], label='Our parameters refined with v1')
+    axs[coord[0], coord[1]].plot(v2spec[:, 0], v2spec[:, 1], label='Our parameters refined with v2')
+    axs[coord[0], coord[1]].plot(halfv1spec[:, 0], halfv1spec[:, 1], label='Their parameters refined with v1')
     axs[coord[0], coord[1]].plot(spectrometerdata[:, 0], spectrometerdata[:, i+1], label='spectrometer')
-    axs[coord[0], coord[1]].plot(nocalspec[:, 0], nocalspec[:, 1], label='no cross-talk correction')
+    axs[coord[0], coord[1]].plot(nocalspec[:, 0], nocalspec[:, 1], label='Supplied matrix')
     axs[coord[0], coord[1]].set_title(tile, fontsize = 8)
     if i == 0:
         axs[coord[0], coord[1]].legend(loc = 'best')

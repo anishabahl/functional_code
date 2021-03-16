@@ -10,11 +10,11 @@ from spectral import imshow
 from spectral import envi
 import xml.etree.ElementTree as ET
 #######INPUTS
-data = '/home/ab20/Data/Kuka/2021_03_15/vis/v7/' #path to data
+data = '/home/ab20/Data/Kuka/2021_03_15/vis/v11/' #path to data
 filetype = '.png'
 whitename = 'ref_white' #white reference image name
 darkname = 'ref_dark' #dark reference image name
-newlocation = '/home/ab20/Data/Kuka/2021_03_15/vis/v7_demosaiced/' #name of new location to put new files (must already exist)
+newlocation = '/home/ab20/Data/Kuka/2021_03_15/vis/v11_demosaiced/' #name of new location to put new files (must already exist)
 x = '/home/ab20/Data/Calibration_file/visfullxaxis16.csv' #all wavelengths
 
 wavelengths = genfromtxt(x, delimiter=',')
