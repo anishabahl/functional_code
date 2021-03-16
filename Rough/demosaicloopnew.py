@@ -10,16 +10,19 @@ from spectral import imshow
 from spectral import envi
 import xml.etree.ElementTree as ET
 #######INPUTS
-data = '/home/ab20/Data/Kuka/2021_03_15/NIR/v9/' #path to data
+data = '/home/ab20/Data/Kuka/2021_03_15/NIR/v0/' #path to data
 filetype = '.png'
 whitename = 'ref_white' #white reference image name
 darkname = 'ref_dark' #dark reference image name
-newlocation = '/home/ab20/Data/Kuka/2021_03_15/NIR/v9_demosaiced/' #name of new location to put new files (must already exist)
+newlocation = '/home/ab20/Data/Kuka/2021_03_15/NIR/v0_demosaiced/' #name of new location to put new files (must already exist)
 x = '/home/ab20/Data/Calibration_file/fullxaxis25.csv' #all wavelengths
 
 wavelengths = genfromtxt(x, delimiter=',')
 wavelengths = np.delete(wavelengths, 0,0)
-wavelengths = wavelengths.reshape(wavelengths.shape[0],1)
+wavelengths = wavelengths.reshape(wavelengths.shape[0],)
+#print(wavelengths[:])
+wavelengths = [str(w) for w in wavelengths]
+#print(wavelengths)
 for file in sorted(os.listdir(data)):
     if file.endswith(filetype):
         if not file.endswith('label'+filetype):
@@ -133,10 +136,11 @@ for file in sorted(os.listdir(data)):
 ##                view2 = imshow(Hypercube, bands = (1,11,23)) #Does not appear quite as expected not sure why
                 #############SAVE DATA
                 metadata = {}
-                metadata["wavelengths"] = wavelengths
+                metadata["wavelength"] = wavelengths
+                metadata["wavelength units"] = "nm"
                 metadata["bands"] = 25
-                metadata["height"] = 1088
-                metadata["width"] = 2048
+                #metadata["height"] = 1088
+                #metadata["width"] = 2048
                 img = envi.save_image(newlocation+newfilename+'.hdr', Data, shape = Data.shape, dtype=np.float32, force=True, metadata=metadata)
 
 

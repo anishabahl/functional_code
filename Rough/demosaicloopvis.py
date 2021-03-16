@@ -19,7 +19,8 @@ x = '/home/ab20/Data/Calibration_file/visfullxaxis16.csv' #all wavelengths
 
 wavelengths = genfromtxt(x, delimiter=',')
 wavelengths = np.delete(wavelengths, 0,0)
-wavelengths = wavelengths.reshape(wavelengths.shape[0],1)
+wavelengths = wavelengths.reshape(wavelengths.shape[0],)
+wavelengths = [str(w) for w in wavelengths]
 for file in sorted(os.listdir(data)):
     if file.endswith(filetype):
         if not file.endswith('label'+filetype):
@@ -96,10 +97,11 @@ for file in sorted(os.listdir(data)):
                 Data = Hypercube
                 #############SAVE DATA
                 metadata = {}
-                metadata["wavelengths"] = wavelengths
+                metadata["wavelength"] = wavelengths
+                metadata["wavelength units"] = "nm"
                 metadata["bands"] = 16
-                metadata["height"] = 1088
-                metadata["width"] = 2048
+                #metadata["height"] = 1088
+                #metadata["width"] = 2048
                 img = envi.save_image(newlocation+newfilename+'.hdr', Data, shape = Data.shape, dtype=np.float32, force=True, metadata=metadata)
 
 
